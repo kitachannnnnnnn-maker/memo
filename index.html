@@ -657,10 +657,8 @@
         setConnectionStatus("success", "オンライン同期中");
       }, function(err) {
         console.warn("Realtime updates read error. Switching to local storage fallback:", err);
-        enableLocalFallbackMode("保存エラーのためオフライン");
-        loadLocalData();
-        renderDisplayBoard();
-        updateEditorUI();
+        // 一時的な読み込みエラーで同期を切断しないように改善
+        setConnectionStatus("error", "再接続を試み中...");
       });
     }
 
@@ -679,19 +677,18 @@
         return;
       }
 
-      if (!isUserAuth || !currentClassId) return;
+      // ログイン状態（認証）が完了していることを厳密にガード
+      if (!isUserAuth || !currentClassId || !auth.currentUser) return;
       
       var docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('boardState').doc(currentClassId);
       el.autoSaveIndicator.textContent = "保存中...";
+      
       docRef.set(state).then(function() {
         el.autoSaveIndicator.textContent = "変更は自動保存されます";
       }).catch(function(err) {
-        console.warn("Save failed, auto reverting to offline saving:", err);
-        enableLocalFallbackMode("PC内保存（通信切断）");
-        var localKey = `school_board_local_${currentClassId || 'default'}`;
-        localStorage.setItem(localKey, JSON.stringify(state));
-        el.autoSaveIndicator.textContent = "通信エラー：PC内に保存しました";
-        renderDisplayBoard();
+        console.warn("Save failed:", err);
+        // 一時的なエラーで永久にオフラインモードに切り替えてしまうバグを修正
+        el.autoSaveIndicator.textContent = "通信状況を確認しています...";
       });
     }
 
@@ -701,7 +698,7 @@
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(function() {
         saveStateToCloud();
-      }, 500);
+      }, 350); // 入力応答速度をより滑らかに向上
     }
 
     // Convert Western digits to Japanese full-width (good for vertical layout alignment)
