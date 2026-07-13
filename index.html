@@ -10,45 +10,53 @@
   <style>
     body { background-color: #fff; font-family: sans-serif; }
     .vertical-text { writing-mode: vertical-rl; text-orientation: upright; }
-    /* 線を交差させるスタイル */
     .section-line { border-bottom: 2px solid #334155; margin-bottom: 0.5rem; width: 100%; }
     .board-container { display: flex; flex-direction: row; justify-content: flex-start; overflow-x: auto; padding-bottom: 1rem; height: 75vh; }
     .board-col { display: flex; flex-direction: column; align-items: center; border-right: 2px solid #334155; padding: 0 1rem; min-width: 140px; flex-shrink: 0; }
     .board-col.narrow { min-width: 80px; }
     .board-col.no-border { border-right: none; }
-    .content-wrapper { display: flex; flex-direction: row-reverse; gap: 1.5rem; align-items: flex-start; height: 100%; width: 100%; }
-    #board-main { transition: font-size 0.2s; }
-    .zoom-btn { background: #f1f5f9; padding: 8px 12px; border-radius: 999px; font-weight: bold; }
+    
+    .vertical-container { writing-mode: vertical-rl; text-orientation: upright; display: flex; flex-direction: column; align-items: flex-start; height: 60vh; min-width: 2rem; }
+    .horizontal-container { display: flex; flex-direction: column; width: 100%; height: 60vh; }
+    
+    .editable { min-height: 1.5rem; padding: 0.25rem; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s; }
+    .editable:hover { background-color: #f1f5f9; }
+    .edit-input { width: 100%; padding: 4px; border: 2px solid #3b82f6; border-radius: 4px; outline: none; }
+    .zoom-btn { background: #f1f5f9; padding: 4px 12px; border-radius: 999px; font-weight: bold; }
+    #disp-date { cursor: pointer; transition: opacity 0.2s; }
+    #disp-date:hover { opacity: 0.7; }
   </style>
 </head>
 <body class="p-4">
 
   <header class="flex justify-between items-center mb-6">
-    <h1 class="text-xl font-bold">メモ</h1>
     <div class="flex items-center gap-3">
-      <button onclick="changeFontSize(-2)" class="zoom-btn">A-</button>
-      <button onclick="changeFontSize(2)" class="zoom-btn">A+</button>
-      <button id="mode-toggle" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">編集モード</button>
+        <h1 class="text-xl font-bold">メモ</h1>
+        <button onclick="changeFontSize(-2)" class="zoom-btn">A-</button>
+        <button onclick="changeFontSize(2)" class="zoom-btn">A+</button>
+    </div>
+    <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded">
+            <input type="text" id="edit-month" class="w-8 text-center bg-transparent border-b border-gray-400" onblur="saveDate()" placeholder="7">月
+            <input type="text" id="edit-day" class="w-8 text-center bg-transparent border-b border-gray-400" onblur="saveDate()" placeholder="13">日
+            (<input type="text" id="edit-week" class="w-6 text-center bg-transparent border-b border-gray-400" onblur="saveDate()" placeholder="月">)
+        </div>
+        <button id="mode-toggle" class="bg-slate-600 text-white px-4 py-2 rounded-lg text-sm">編集モード</button>
     </div>
   </header>
 
   <main id="board-main" style="font-size: 20px;">
     <div id="view-display" class="board-container">
-      <div class="board-col"><h2 class="font-bold">連</h2><div class="section-line"></div><div id="disp-notice" class="content-wrapper"></div></div>
-      <div class="board-col"><h2 class="font-bold">宿</h2><div class="section-line"></div><div id="disp-homework" class="content-wrapper"></div></div>
-      <div class="board-col"><h2 class="font-bold">持</h2><div class="section-line"></div><div id="disp-items" class="content-wrapper"></div></div>
-      <div class="board-col narrow"><h2 class="font-bold">時</h2><div class="section-line"></div><div id="disp-schedule" class="leading-relaxed whitespace-pre-wrap"></div></div>
-      <div class="board-col narrow no-border"><div id="disp-date" class="vertical-text font-bold text-xl pt-2"></div></div>
+      <div class="board-col"><h2 class="font-bold">連</h2><div class="section-line"></div><div id="disp-notice" class="vertical-container"></div></div>
+      <div class="board-col"><h2 class="font-bold">宿</h2><div class="section-line"></div><div id="disp-homework" class="vertical-container"></div></div>
+      <div class="board-col"><h2 class="font-bold">持</h2><div class="section-line"></div><div id="disp-items" class="vertical-container"></div></div>
+      <div class="board-col narrow"><h2 class="font-bold">時</h2><div class="section-line"></div><div id="disp-schedule" class="horizontal-container"></div></div>
+      <div class="board-col narrow no-border"><div id="disp-date" class="vertical-text font-bold text-xl pt-2" title="クリックで翌日へ"></div></div>
     </div>
 
     <div id="view-editor" class="hidden max-w-lg mx-auto bg-slate-50 p-4 rounded-xl border">
-      <h2 class="font-bold mb-4 border-b pb-2">編集画面</h2>
-      <div class="mb-4 p-2 bg-white rounded border flex items-center gap-2">
-        日付：<input type="text" id="edit-month" class="w-10 p-1 border rounded" placeholder="7">月
-        <input type="text" id="edit-day" class="w-10 p-1 border rounded" placeholder="13">日
-        (<input type="text" id="edit-week" class="w-6 p-1 border rounded" placeholder="月">)
-      </div>
-      <div class="space-y-4">
+      <h2 class="font-bold mb-4 border-b pb-2">編集モード：項目管理</h2>
+      <div class="space-y-6">
         <div id="list-schedule"><label class="block text-sm font-bold">時間割</label><div class="list-container flex flex-col gap-2"></div></div>
         <div id="list-items"><label class="block text-sm font-bold">持ち物</label><div class="list-container flex flex-col gap-2"></div></div>
         <div id="list-homework"><label class="block text-sm font-bold">宿題</label><div class="list-container flex flex-col gap-2"></div></div>
@@ -59,8 +67,7 @@
 
   <script>
     const firebaseConfig = { apiKey: "AIzaSyB-hHkL9jyoudu3bNyhidZIUCKlUaaXUX8", projectId: "electronic-board-app" };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    const db = firebase.firestore();
+    const boardId = "main";
     let currentSize = 20;
 
     const changeFontSize = (delta) => {
@@ -68,85 +75,130 @@
       document.getElementById('board-main').style.fontSize = currentSize + 'px';
     };
 
-    const updateData = () => {
-      const getList = (id) => Array.from(document.querySelectorAll(`#list-${id} .list-container input`)).map(i => i.value);
-      db.collection("boards").doc("main").set({
-        month: document.getElementById('edit-month').value,
-        day: document.getElementById('edit-day').value,
-        week: document.getElementById('edit-week').value,
-        schedule: getList('schedule'),
-        items: getList('items'),
-        homework: getList('homework'),
-        notice: getList('notice')
-      }, { merge: true });
+    const toKanji = (numStr) => {
+        const num = parseInt(numStr);
+        if (isNaN(num)) return numStr;
+        const kanji = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+        if (num <= 10) return kanji[num];
+        const tens = Math.floor(num / 10);
+        const ones = num % 10;
+        return (tens === 1 ? '十' : kanji[tens] + '十') + (ones === 0 ? '' : kanji[ones]);
     };
 
-    const createInputRow = (container, val = "", isFixedLabel = false) => {
-      const div = document.createElement('div');
-      div.className = "flex gap-2 items-center";
-      const label = isFixedLabel ? `<span class="font-mono text-gray-500 font-bold w-6">${isFixedLabel}</span>` : "";
-      div.innerHTML = `${label}<input type="text" value="${val}" class="w-full p-2 border rounded" oninput="updateData()">
-                       ${!isFixedLabel ? `<button type="button" class="px-3 bg-red-100 text-red-600 rounded" onclick="this.parentElement.remove(); updateData()">×</button>` : ""}`;
-      container.appendChild(div);
+    const getNextWeekDay = (currentWeek) => {
+        const days = ['日', '月', '火', '水', '木', '金', '土'];
+        const idx = days.indexOf(currentWeek);
+        return idx !== -1 ? days[(idx + 1) % 7] : "";
     };
 
-    ['notice', 'homework', 'items'].forEach(id => {
-      const container = document.querySelector(`#list-${id} .list-container`);
-      const btn = document.createElement('button');
-      btn.type = "button";
-      btn.className = "mt-2 w-full p-2 bg-blue-100 text-blue-700 rounded font-bold";
-      btn.textContent = "＋ 追加";
-      btn.onclick = () => { createInputRow(container, ''); updateData(); };
-      container.after(btn);
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
+
+    const saveDate = () => {
+        db.collection("boards").doc(boardId).set({
+            month: document.getElementById('edit-month').value,
+            day: document.getElementById('edit-day').value,
+            week: document.getElementById('edit-week').value
+        }, { merge: true });
+    };
+
+    const advanceDate = () => {
+        db.collection("boards").doc(boardId).get().then(doc => {
+            const d = doc.data() || {};
+            let m = parseInt(d.month) || 1;
+            let day = parseInt(d.day) || 1;
+            let nextWeek = getNextWeekDay(d.week);
+            
+            day += 1;
+            if(day > 30) { day = 1; m += 1; }
+            if(m > 12) m = 1;
+            
+            db.collection("boards").doc(boardId).set({
+                month: m.toString(),
+                day: day.toString(),
+                week: nextWeek
+            }, { merge: true });
+        });
+    };
+
+    document.getElementById('disp-date').onclick = advanceDate;
+
+    const updateItem = (field, index, value) => {
+        db.collection("boards").doc(boardId).get().then(doc => {
+            let data = doc.data() || {};
+            let list = data[field] || [];
+            list[index] = value;
+            db.collection("boards").doc(boardId).set({ [field]: list }, { merge: true });
+        });
+    };
+
+    const deleteItem = (field, idx) => {
+        db.collection("boards").doc(boardId).get().then(doc => {
+            let list = doc.data()[field] || [];
+            list.splice(idx, 1);
+            db.collection("boards").doc(boardId).set({ [field]: list }, { merge: true });
+        });
+    };
+
+    const renderEditable = (containerId, field) => {
+        const cont = document.getElementById(containerId);
+        db.collection("boards").doc(boardId).onSnapshot(doc => {
+            const data = doc.data() || {};
+            const items = data[field] || [];
+            cont.innerHTML = "";
+            items.forEach((val, idx) => {
+                const div = document.createElement('div');
+                div.className = "editable";
+                let prefix = (field === 'notice') ? '※' : (field === 'items') ? '・' : '';
+                let text = (field === 'schedule') ? (idx + 1) + "." + val : prefix + val;
+                
+                div.textContent = text;
+                div.onclick = () => {
+                    const input = document.createElement('input');
+                    input.className = "edit-input";
+                    input.value = val;
+                    input.onblur = () => { updateItem(field, idx, input.value); input.replaceWith(div); };
+                    div.replaceWith(input);
+                    input.focus();
+                };
+                cont.appendChild(div);
+            });
+        });
+    };
+
+    const renderEditor = (containerId, field) => {
+        const cont = document.querySelector(`#list-${containerId} .list-container`);
+        db.collection("boards").doc(boardId).onSnapshot(doc => {
+            const data = doc.data() || {};
+            cont.innerHTML = "";
+            (data[field] || []).forEach((val, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex gap-2 items-center";
+                div.innerHTML = `<span class="text-gray-400 font-bold w-4">${(field === 'notice')?'※':(field==='items')?'・':''}</span>
+                                 <input type="text" value="${val}" class="w-full p-2 border rounded" onblur="updateItem('${field}', ${idx}, this.value)">
+                                 <button type="button" class="px-3 bg-red-100 text-red-600 rounded" onclick="deleteItem('${field}', ${idx})">×</button>`;
+                cont.appendChild(div);
+            });
+        });
+    };
+
+    ['notice', 'homework', 'items', 'schedule'].forEach(f => {
+        renderEditable('disp-' + f, f);
+        renderEditor(f, f);
     });
 
     document.getElementById('mode-toggle').onclick = (e) => {
-      const editor = document.getElementById('view-editor');
-      const display = document.getElementById('view-display');
-      const isHidden = editor.classList.contains('hidden');
-      editor.classList.toggle('hidden', !isHidden);
-      display.classList.toggle('hidden', isHidden);
-      e.target.textContent = isHidden ? "表示に戻る" : "編集モード";
+        document.getElementById('view-editor').classList.toggle('hidden');
+        document.getElementById('view-display').classList.toggle('hidden');
+        e.target.textContent = document.getElementById('view-editor').classList.contains('hidden') ? "編集モード" : "表示に戻る";
     };
 
-    const ensureArray = (val) => Array.isArray(val) ? val : (val ? [val] : []);
-
-    db.collection("boards").doc("main").onSnapshot((doc) => {
-      if (doc.exists) {
-        const d = doc.data();
-        document.getElementById('disp-date').textContent = `${d.month||''}月${d.day||''}日${d.week ? `︵${d.week}︶` : ""}`;
-        
-        const schedArr = ensureArray(d.schedule);
-        document.getElementById('disp-schedule').textContent = [1,2,3,4,5,6].map((n, i) => `${n}.${schedArr[i] || ""}`).join('\n');
-        
-        const updateDisplay = (id, arr, vert, prefix = "") => {
-            const cont = document.getElementById(id);
-            cont.innerHTML = "";
-            ensureArray(arr).forEach(t => {
-                const s = document.createElement('span');
-                s.className = vert ? "vertical-text" : "";
-                s.textContent = (prefix && t ? prefix : "") + t;
-                cont.appendChild(s);
-            });
-        };
-        updateDisplay('disp-items', d.items, true, "・");
-        updateDisplay('disp-homework', d.homework, true);
-        updateDisplay('disp-notice', d.notice, true, "※");
-        
-        if (document.activeElement.tagName !== 'INPUT') {
-          document.getElementById('edit-month').value = d.month || "";
-          document.getElementById('edit-day').value = d.day || "";
-          document.getElementById('edit-week').value = d.week || "";
-          ['notice', 'homework', 'items'].forEach(id => {
-              const container = document.querySelector(`#list-${id} .list-container`);
-              container.innerHTML = "";
-              ensureArray(d[id]).forEach(val => createInputRow(container, val));
-          });
-          const sCont = document.querySelector('#list-schedule .list-container');
-          sCont.innerHTML = "";
-          [1,2,3,4,5,6].forEach((n, i) => createInputRow(sCont, schedArr[i] || "", n + "."));
-        }
-      }
+    db.collection("boards").doc(boardId).onSnapshot(doc => {
+        const d = doc.data() || {};
+        document.getElementById('disp-date').textContent = `${toKanji(d.month||"")}月${toKanji(d.day||"")}日${d.week ? `︵${d.week}︶` : ""}`;
+        document.getElementById('edit-month').value = d.month || "";
+        document.getElementById('edit-day').value = d.day || "";
+        document.getElementById('edit-week').value = d.week || "";
     });
   </script>
 </body>
