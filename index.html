@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電子黒板 連絡板システム</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts for Handwriting and Clean Gothic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Sawarabi+Mincho&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- qrcode.js for easy sharing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* 縦書きの基本スタイル */
+    .vertical-text {
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      -webkit-text-orientation: upright;
+    }
+    
+    /* 漢字やかなを綺麗に縦並びにするためのフォント設定 */
+    .font-school-gothic {
+      font-family: 'M PLUS Rounded 1c', 'Kiwi Maru', sans-serif;
+    }
+    .font-school-hand {
+      font-family: 'Kiwi Maru', serif;
+    }
+    .font-school-mincho {
+      font-family: 'Sawarabi Mincho', serif;
+    }
+
+    /* 黒板・ホワイトボードの質感調整 */
+    .board-shadow {
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    /* 入力欄のプレースホルダー色調整 */
+    ::placeholder {
+      color: #cbd5e1;
+    }
+
+    /* 印刷/フルスクリーン時のマージン調整 */
+    @media fullscreen {
+      body {
+        background-color: #000;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-school-gothic text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
+
+  <!-- MAIN CONTAINER -->
+  <div id="app" class="flex-1 flex flex-col w-full h-full">
+    
+    <!-- HEADER BAR (Not visible in clean display mode) -->
+    <header id="header-bar" class="bg-slate-800 text-white px-4 py-3 flex justify-between items-center shadow-md">
+      <div class="flex items-center space-x-3">
+        <span class="bg-indigo-600 text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-chalkboard-user mr-1"></i> Classroom Board
+        </span>
+        <h1 class="text-sm md:text-base font-bold flex items-center">
+          <span>学級連絡板</span>
+          <span id="classroom-badge" class="ml-2 px-2 py-0.5 bg-slate-700 rounded text-xs text-indigo-300 font-mono">---</span>
+        </h1>
+      </div>
+      
+      <!-- MODE SWITCHER -->
+      <div class="flex items-center space-x-2">
+        <div id="connection-status" class="flex items-center space-x-1.5 bg-slate-900 px-2.5 py-1 rounded text-xs text-amber-400">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block" id="status-dot"></span>
+          <span id="status-text">接続中...</span>
+        </div>
+        
+        <button id="btn-toggle-mode" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-bold transition flex items-center space-x-1">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span id="toggle-mode-text">編集モードへ</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col relative w-full h-full overflow-hidden">
+      
+      <!-- 1. CLASSROOM SELECTOR (First visit overlay) -->
+      <div id="view-setup" class="hidden fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 md:p-8 shadow-2xl border border-slate-100">
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
+              <i class="fa-solid fa-school"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-800">クラスの連絡板を作成</h2>
+            <p class="text-slate-500 text-sm mt-1">スマホと電子黒板を同期するための合言葉を設定します。</p>
+          </div>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">クラスID (アルファベット・数字)</label>
+              <input type="text" id="setup-class-id" placeholder="例: 3nenshigo, class-5a" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-mono text-lg text-center" />
+            </div>
+            
+            <button id="btn-start-setup" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/20 transition flex items-center justify-center space-x-2">
+              <span>このIDで始める</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            
+            <div class="text-center pt-2">
+              <span class="text-xs text-slate-400">同じIDを入力することで、他のスマホやPCとも同期できます。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. BLACKBOARD DISPLAY MODE (Fullscreen clean design based on screenshot) -->
+      <div id="view-display" class="hidden flex-1 w-full h-full bg-[#f8f9fa] flex flex-col p-4 md:p-6 select-none relative overflow-hidden">
+        
+        <!-- Board Inner Shadow Container with thick Borders -->
+        <div class="flex-1 w-full h-full border-4 md:border-8 border-slate-700 bg-white rounded-xl shadow-inner flex flex-row overflow-hidden relative font-school-gothic text-slate-800" id="blackboard-canvas">
+          
+          <!-- LEFT COLUMN: 連 (Announcements) -->
+          <div class="flex-1 flex flex-col border-r-4 border-slate-700 h-full">
+            <div class="h-[12%] flex items-center justify-center text-3xl md:text-4xl font-extrabold border-b-4 border-slate-700 bg-slate-50/50">
+              連
+            </div>
+            <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-contacts">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- MIDDLE LEFT COLUMN: 宿 (Homework) -->
+          <div class="flex-1 flex flex-col border-r-4 border-slate-700 h-full">
+            <div class="h-[12%] flex items-center justify-center text-3xl md:text-4xl font-extrabold border-b-4 border-slate-700 bg-slate-50/50 relative">
+              宿
+            </div>
+            <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-homework">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- MIDDLE RIGHT COLUMN: 持 (Belongings) -->
+          <div class="flex-1 flex flex-col border-r-4 border-slate-700 h-full relative">
+            <div class="h-[12%] flex items-center justify-center text-3xl md:text-4xl font-extrabold border-b-4 border-slate-700 bg-slate-50/50">
+              <!-- Small X icon on header left as in screenshot -->
+              <span class="absolute left-3 top-3 w-6 h-6 md:w-8 md:h-8 rounded-full bg-slate-600 text-white flex items-center justify-center text-xs md:text-sm font-sans">×</span>
+              持
+            </div>
+            <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-belongings">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: 時 (Timetable) -->
+          <div class="flex-1 flex flex-col border-r-4 border-slate-700 h-full">
+            <div class="h-[12%] flex items-center justify-center text-3xl md:text-4xl font-extrabold border-b-4 border-slate-700 bg-slate-50/50">
+              時
+            </div>
+            <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-timetable">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- RIGHTMOST NARROW COLUMN: 日付 (Date) -->
+          <div class="w-[12%] min-w-[70px] md:min-w-[100px] border-slate-700 h-full flex flex-col justify-center items-center py-6 bg-slate-50/30">
+            <div class="flex-1 flex flex-col justify-between items-center vertical-text text-2xl md:text-3xl lg:text-4xl font-black tracking-widest text-center" id="display-date">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Floating Utilities Panel on Whiteboard Screen (Bottom Right) -->
+        <div class="absolute bottom-10 right-10 flex space-x-2 bg-slate-900/90 backdrop-blur text-white px-3 py-2 rounded-xl shadow-2xl opacity-10 hover:opacity-100 transition duration-300">
+          <button id="btn-fullscreen" title="全画面表示" class="p-2 hover:bg-slate-700 rounded transition text-base">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+          <button id="btn-show-qr" title="スマホ連携QR表示" class="p-2 hover:bg-slate-700 rounded transition text-base">
+            <i class="fa-solid fa-qrcode"></i>
+          </button>
+          <div class="w-px bg-slate-700 my-1"></div>
+          <button id="btn-zoom-out" title="文字を小さく" class="p-2 hover:bg-slate-700 rounded transition text-base">
+            <i class="fa-solid fa-magnifying-glass-minus"></i>
+          </button>
+          <button id="btn-zoom-in" title="文字を大きく" class="p-2 hover:bg-slate-700 rounded transition text-base">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </button>
+        </div>
+
+        <!-- QR Code Overlay Modal -->
+        <div id="qr-overlay" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-40">
+          <div class="bg-white p-6 md:p-8 rounded-2xl max-w-sm w-full text-center shadow-2xl border border-slate-100 relative">
+            <button id="btn-close-qr" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">スマホからカンタン入力！</h3>
+            <p id="qr-instructions" class="text-xs text-slate-500 mb-4">カメラでQRコードを読み取ると、スマホからこの黒板の内容をリアルタイムに書き換えることができます。</p>
+            
+            <!-- QR Container -->
+            <div id="qrcode-container" class="bg-white p-4 rounded-xl inline-block border-2 border-slate-100 shadow-sm mx-auto mb-4 flex items-center justify-center min-h-[180px]"></div>
+            
+            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-2">
+              <span class="block text-[10px] uppercase tracking-wider font-bold text-slate-400">直接アクセスするURL</span>
+              <span id="share-url-text" class="text-xs font-mono text-slate-600 break-all select-all block mt-0.5 font-bold">---</span>
+            </div>
+            
+            <button id="btn-copy-url" class="text-indigo-600 hover:text-indigo-500 font-bold text-xs py-1 px-3 rounded border border-indigo-100 hover:border-indigo-300 transition">
+              <i class="fa-solid fa-copy mr-1"></i>URLをコピーする
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. MOBILE EDITOR MODE (Polished dashboard for smartphones) -->
+      <div id="view-editor" class="hidden flex-1 w-full bg-slate-50 overflow-y-auto p-4 md:p-6">
+        
+        <div class="max-w-3xl mx-auto space-y-6 pb-20">
+          
+          <!-- Sync notification -->
+          <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3 text-indigo-900">
+              <div class="w-10 h-10 rounded-xl bg-indigo-200/50 flex items-center justify-center text-indigo-700 text-lg">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm" id="editor-sync-title">電子黒板と連動中</h4>
+                <p class="text-xs text-indigo-700" id="editor-sync-desc">入力内容は自動でクラウドに保存され、電子黒板に即時反映されます。</p>
+              </div>
+            </div>
+            <button id="btn-preview-on-phone" class="bg-white hover:bg-slate-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1">
+              <i class="fa-solid fa-desktop"></i>
+              <span>黒板を見る</span>
+            </button>
+          </div>
+
+          <!-- DATE SECTION -->
+          <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/60">
+            <div class="flex items-center space-x-2 text-slate-800 font-bold border-b border-slate-100 pb-3 mb-4">
+              <span class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-sm">
+                <i class="fa-solid fa-calendar-days"></i>
+              </span>
+              <span>1. 日付の設定</span>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Date Selector -->
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">日付指定 (自動変換)</label>
+                <input type="date" id="input-date" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+              </div>
+              
+              <!-- Quick Select Buttons -->
+              <div class="flex items-end space-x-2">
+                <button id="btn-date-today" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">今日</button>
+                <button id="btn-date-tomorrow" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition">明日</button>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-0.5">月 (表示文字)</label>
+                <input type="text" id="date-month-override" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-500 focus:outline-none font-bold" placeholder="七月">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-0.5">日 (表示文字)</label>
+                <input type="text" id="date-day-override" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-500 focus:outline-none font-bold" placeholder="十三日">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-0.5">曜日 (表示文字)</label>
+                <input type="text" id="date-week-override" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-500 focus:outline-none font-bold" placeholder="月">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 mb-0.5">括弧/補足</label>
+                <input type="text" id="date-bracket-override" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-500 focus:outline-none font-bold" placeholder="〔　〕">
+              </div>
+            </div>
+          </section>
+
+          <!-- TIMETABLE SECTION -->
+          <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/60">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div class="flex items-center space-x-2 text-slate-800 font-bold">
+                <span class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-clock"></i>
+                </span>
+                <span>2. 時間割 (時)</span>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <button id="btn-period-add" class="bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center">
+                  <i class="fa-solid fa-plus mr-1"></i>増やす
+                </button>
+                <button id="btn-period-remove" class="bg-slate-100 hover:bg-rose-100 hover:text-rose-600 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center">
+                  <i class="fa-solid fa-minus mr-1"></i>減らす
+                </button>
+              </div>
+            </div>
+
+            <!-- Periods Input List -->
+            <div class="space-y-3" id="editor-timetable-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </section>
+
+          <!-- BELONGINGS SECTION -->
+          <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/60">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div class="flex items-center space-x-2 text-slate-800 font-bold">
+                <span class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-toolbox"></i>
+                </span>
+                <span>3. 持ち物 (持)</span>
+              </div>
+              <button id="btn-belongings-clear" class="text-xs text-rose-500 hover:text-rose-600 font-bold transition">すべて消去</button>
+            </div>
+            
+            <div class="space-y-3">
+              <div class="relative">
+                <textarea id="editor-belongings-text" rows="4" placeholder="・えのぐセット&#10;・エプロン C&#10;・たいいくかんシューズ" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 font-medium tracking-wide leading-relaxed" style="resize: none;"></textarea>
+              </div>
+              <p class="text-slate-400 text-[10px]">改行すると別々の行（弾）として縦書き表示されます。「・」は入力時に自動補完されます。</p>
+            </div>
+          </section>
+
+          <!-- HOMEWORK SECTION -->
+          <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/60">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div class="flex items-center space-x-2 text-slate-800 font-bold">
+                <span class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-pencil"></i>
+                </span>
+                <span>4. 宿題 (宿)</span>
+              </div>
+              <div class="flex items-center space-x-1">
+                <button id="btn-homework-add" class="bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center">
+                  <i class="fa-solid fa-plus mr-1"></i>追加
+                </button>
+              </div>
+            </div>
+
+            <!-- Homework Items Container -->
+            <div class="space-y-4" id="editor-homework-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </section>
+
+          <!-- CONTACTS SECTION -->
+          <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/60">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div class="flex items-center space-x-2 text-slate-800 font-bold">
+                <span class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-bullhorn"></i>
+                </span>
+                <span>5. 連絡 (連)</span>
+              </div>
+              <button id="btn-contacts-clear" class="text-xs text-rose-500 hover:text-rose-600 font-bold transition">すべて消去</button>
+            </div>
+            
+            <div class="space-y-3">
+              <textarea id="editor-contacts-text" rows="4" placeholder="※15:00げこう&#10;※しゅくだいをおすれない&#10;※あしたはズックばこもちかえり" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 font-medium tracking-wide leading-relaxed" style="resize: none;"></textarea>
+              <p class="text-slate-400 text-[10px]">改行すると次の項目になります。「※」や「・」から始めると黒板らしさが増します。</p>
+            </div>
+          </section>
+
+          <!-- FONT & DISPLAY OPTION SECTION -->
+          <section class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/60">
+            <div class="flex items-center space-x-2 text-slate-800 font-bold border-b border-slate-100 pb-3 mb-4">
+              <span class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-sm">
+                <i class="fa-solid fa-sliders"></i>
+              </span>
+              <span>6. 電子黒板の表示オプション (遠隔操作)</span>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">文字サイズ（拡大率）</label>
+                <div class="flex items-center space-x-3">
+                  <input type="range" id="input-scale" min="60" max="140" value="100" class="flex-1 accent-indigo-600" />
+                  <span id="label-scale" class="text-sm font-bold text-slate-700 w-12 text-right">100%</span>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">使用フォント</label>
+                <select id="input-font-theme" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none font-bold">
+                  <option value="font-school-gothic">教科書風ゴシック体</option>
+                  <option value="font-school-hand">手書き風まーる体</option>
+                  <option value="font-school-mincho">教科書風明朝体</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- Fixed Bottom Floating Action Bar for Mobile -->
+        <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-slate-200 px-4 py-3 flex justify-between items-center z-10 shadow-lg">
+          <div class="flex items-center space-x-2">
+            <span id="auto-save-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span class="text-xs text-slate-600 font-bold" id="auto-save-indicator">変更は自動保存されます</span>
+          </div>
+          
+          <button id="btn-force-sync" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center space-x-1.5 text-sm">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>黒板に即反映</span>
+          </button>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Firebase Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global variables from environment or defaults
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'school-memo-board';
+    
+    // Check if configuration exists or is valid
+    let firebaseConfig;
+    try {
+      firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    } catch(e) {
+      firebaseConfig = null;
+    }
+
+    // Determine if configuration is actual Firebase config or placeholder mock-ups
+    const isMockOrEmpty = !firebaseConfig || firebaseConfig.apiKey === "mock-api-key" || firebaseConfig.apiKey === "";
+
+    // App state holding current settings
+    let state = {
+      date: {
+        raw: "",
+        month: "七月",
+        day: "十三日",
+        week: "月",
+        bracket: "〔　〕"
+      },
+      timetable: ["国語", "家庭", "家庭", "理科", "算数", "社会"],
+      belongings: ["・エプロン C", "・", "・"],
+      homework: [
+        { badge: "音", text: "国語 86から87\n〔　〕" },
+        { badge: "が", text: "自学 1.5" }
+      ],
+      contacts: ["※ ※ ※"],
+      fontScale: 100,
+      fontTheme: "font-school-gothic"
+    };
+
+    // Firebase services holders
+    let app, db, auth;
+    let isUserAuth = false;
+    let isLocalFallback = false; // Becomes true if Firebase fails/unconfigured
+
+    // Setup Mock firebase if invalid
+    if (!isMockOrEmpty) {
+      try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+      } catch (err) {
+        console.warn("Failed to initialize Firebase SDK. Switching to local sandbox mode.", err);
+        isLocalFallback = true;
+      }
+    } else {
+      isLocalFallback = true;
+    }
+
+    // Dynamic classroom identity
+    let currentClassId = "";
+    let isDisplayMode = true; // Displays full screen by default
+
+    // Elements mapping
+    const el = {
+      setupView: document.getElementById('view-setup'),
+      displayView: document.getElementById('view-display'),
+      editorView: document.getElementById('view-editor'),
+      setupClassId: document.getElementById('setup-class-id'),
+      btnStartSetup: document.getElementById('btn-start-setup'),
+      classroomBadge: document.getElementById('classroom-badge'),
+      btnToggleMode: document.getElementById('btn-toggle-mode'),
+      toggleModeText: document.getElementById('toggle-mode-text'),
+      connectionStatus: document.getElementById('connection-status'),
+      statusDot: document.getElementById('status-dot'),
+      statusText: document.getElementById('status-text'),
+      
+      // Displays
+      displayContacts: document.getElementById('display-contacts'),
+      displayHomework: document.getElementById('display-homework'),
+      displayBelongings: document.getElementById('display-belongings'),
+      displayTimetable: document.getElementById('display-timetable'),
+      displayDate: document.getElementById('display-date'),
+      blackboardCanvas: document.getElementById('blackboard-canvas'),
+      
+      // Display Controls
+      btnFullscreen: document.getElementById('btn-fullscreen'),
+      btnShowQr: document.getElementById('btn-show-qr'),
+      btnZoomOut: document.getElementById('btn-zoom-out'),
+      btnZoomIn: document.getElementById('btn-zoom-in'),
+      qrOverlay: document.getElementById('qr-overlay'),
+      btnCloseQr: document.getElementById('btn-close-qr'),
+      qrcodeContainer: document.getElementById('qrcode-container'),
+      shareUrlText: document.getElementById('share-url-text'),
+      btnCopyUrl: document.getElementById('btn-copy-url'),
+
+      // Editors
+      btnPreviewOnPhone: document.getElementById('btn-preview-on-phone'),
+      inputDate: document.getElementById('input-date'),
+      btnDateToday: document.getElementById('btn-date-today'),
+      btnDateTomorrow: document.getElementById('btn-date-tomorrow'),
+      dateMonthOverride: document.getElementById('date-month-override'),
+      dateDayOverride: document.getElementById('date-day-override'),
+      dateWeekOverride: document.getElementById('date-week-override'),
+      dateBracketOverride: document.getElementById('date-bracket-override'),
+      btnPeriodAdd: document.getElementById('btn-period-add'),
+      btnPeriodRemove: document.getElementById('btn-period-remove'),
+      editorTimetableContainer: document.getElementById('editor-timetable-container'),
+      btnBelongingsClear: document.getElementById('btn-belongings-clear'),
+      editorBelongingsText: document.getElementById('editor-belongings-text'),
+      btnHomeworkAdd: document.getElementById('btn-homework-add'),
+      editorHomeworkContainer: document.getElementById('editor-homework-container'),
+      btnContactsClear: document.getElementById('btn-contacts-clear'),
+      editorContactsText: document.getElementById('editor-contacts-text'),
+      inputScale: document.getElementById('input-scale'),
+      labelScale: document.getElementById('label-scale'),
+      inputFontTheme: document.getElementById('input-font-theme'),
+      btnForceSync: document.getElementById('btn-force-sync'),
+      autoSaveIndicator: document.getElementById('auto-save-indicator')
+    };
+
+    
+    // Initialize Auth & Routing (With robust fallback)
+    async function initAuthAndRouting() {
+      // 1. Force fallback if config missing
+      if (isLocalFallback) {
+        enableLocalFallbackMode("ローカルPC保存");
+        processRouting();
+        return;
+      }
+
+      // 2. Real connection attempt
+      try {
+        setConnectionStatus("connecting", "認証処理中...");
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+        
+        isUserAuth = true;
+        setConnectionStatus("success", "接続完了");
+        processRouting();
+
+      } catch (err) {
+        console.warn("Auth failed or API-Key invalid. Falling back to robust local offline mode:", err);
+        enableLocalFallbackMode("PC内保存（ローカル動作）");
+        processRouting();
+      }
+    }
+
+    // Secondary initialization routing setup
+    function processRouting() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const classIdParam = urlParams.get('class');
+      const modeParam = urlParams.get('mode');
+
+      if (classIdParam) {
+        currentClassId = classIdParam.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        el.classroomBadge.textContent = currentClassId;
+        
+        if (modeParam === 'edit') {
+          isDisplayMode = false;
+        } else {
+          isDisplayMode = true;
+        }
+        
+        if (isLocalFallback) {
+          loadLocalData();
+          renderDisplayBoard();
+          updateEditorUI();
+        } else {
+          startBoardSync();
+        }
+        setupUI();
+      } else {
+        // Show classroom selector screen first
+        el.setupView.classList.remove('hidden');
+      }
+    }
+
+    // Set fallback offline mode and configure UI states accordingly
+    function enableLocalFallbackMode(reason) {
+      isLocalFallback = true;
+      setConnectionStatus("offline", reason);
+      
+      // Update the sync indicators on editing views
+      const syncTitle = document.getElementById('editor-sync-title');
+      const syncDesc = document.getElementById('editor-sync-desc');
+      if (syncTitle) syncTitle.textContent = "スタンドアロン（PC保存モード）";
+      if (syncDesc) syncDesc.textContent = "このPC内に自動保存されます。Webサーバー経由でない場合スマホ同期は使用できません。";
+      
+      const dot = document.getElementById('auto-save-dot');
+      if (dot) dot.className = "w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block";
+    }
+
+    // Load locally saved configuration from localStorage
+    function loadLocalData() {
+      try {
+        const localKey = `school_board_local_${currentClassId || 'default'}`;
+        const localData = localStorage.getItem(localKey);
+        if (localData) {
+          state = JSON.parse(localData);
+        }
+      } catch (e) {
+        console.warn("Could not load from localStorage:", e);
+      }
+    }
+
+    // Connect to Firestore Realtime Data
+    let unsubscribe = null;
+    function startBoardSync() {
+      if (!isUserAuth || isLocalFallback) return;
+      if (unsubscribe) unsubscribe();
+
+      // Rule 1: Strict path pattern: `/artifacts/{appId}/public/data/{collectionName}`
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'boardState', currentClassId);
+
+      unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          state = docSnap.data();
+          renderDisplayBoard();
+          updateEditorUI();
+        } else {
+          // If document doesn't exist, seed default values
+          saveStateToCloud();
+        }
+        setConnectionStatus("success", "オンライン同期中");
+      }, (err) => {
+        console.warn("Realtime updates read error. Switching to local storage fallback:", err);
+        enableLocalFallbackMode("保存エラーのためオフライン");
+        loadLocalData();
+        renderDisplayBoard();
+        updateEditorUI();
+      });
+    }
+
+    // Save State to Firestore or LocalStorage depending on connection environment
+    async function saveStateToCloud() {
+      if (isLocalFallback) {
+        try {
+          const localKey = `school_board_local_${currentClassId || 'default'}`;
+          localStorage.setItem(localKey, JSON.stringify(state));
+          el.autoSaveIndicator.textContent = "このPC内に保存しました";
+          renderDisplayBoard(); // Redraw UI immediately in local mode
+        } catch(e) {
+          el.autoSaveIndicator.textContent = "変更を反映しました";
+          renderDisplayBoard();
+        }
+        return;
+      }
+
+      if (!isUserAuth || !currentClassId) return;
+      
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'boardState', currentClassId);
+      try {
+        el.autoSaveIndicator.textContent = "保存中...";
+        await setDoc(docRef, state);
+        el.autoSaveIndicator.textContent = "変更は自動保存されます";
+      } catch (err) {
+        console.warn("Save failed, auto reverting to offline saving:", err);
+        enableLocalFallbackMode("PC内保存（通信切断）");
+        // Save local
+        const localKey = `school_board_local_${currentClassId || 'default'}`;
+        localStorage.setItem(localKey, JSON.stringify(state));
+        el.autoSaveIndicator.textContent = "通信エラー：PC内に保存しました";
+        renderDisplayBoard();
+      }
+    }
+
+    // Debounce wrapper helper for auto-save on input
+    let saveTimeout = null;
+    function triggerAutoSave() {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        saveStateToCloud();
+      }, 500); // Shorter latency for smoother user feel
+    }
+
+    // Set connection banner visual status
+    function setConnectionStatus(type, text) {
+      el.statusText.textContent = text;
+      el.statusDot.className = "w-2.5 h-2.5 rounded-full inline-block";
+      
+      if (type === "success") {
+        el.statusDot.classList.add("bg-emerald-400");
+        el.connectionStatus.className = "flex items-center space-x-1.5 bg-slate-900 px-2.5 py-1 rounded text-xs text-emerald-400";
+      } else if (type === "connecting") {
+        el.statusDot.classList.add("bg-amber-400", "animate-pulse");
+        el.connectionStatus.className = "flex items-center space-x-1.5 bg-slate-900 px-2.5 py-1 rounded text-xs text-amber-400";
+      } else if (type === "offline") {
+        el.statusDot.classList.add("bg-indigo-400");
+        el.connectionStatus.className = "flex items-center space-x-1.5 bg-slate-900 px-2.5 py-1 rounded text-xs text-indigo-400 border border-slate-700";
+      } else {
+        el.statusDot.classList.add("bg-rose-400");
+        el.connectionStatus.className = "flex items-center space-x-1.5 bg-rose-950 px-2.5 py-1 rounded text-xs text-rose-400 border border-rose-800";
+      }
+    }
+
+
+    // Convert Western digits to Japanese full-width (good for vertical layout alignment)
+    function kanjiNum(num) {
+      const kanjiDigits = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+      const str = String(num);
+      let result = "";
+      for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        if (/[0-9]/.test(char)) {
+          result += kanjiDigits[parseInt(char)];
+        } else {
+          result += char;
+        }
+      }
+      return result;
+    }
+
+    // Converts month/day into school-board kanji standard (e.g., 12 -> 十二)
+    function smartDateToKanji(month, day) {
+      function conv(val) {
+        const v = parseInt(val);
+        if (isNaN(v)) return val;
+        if (v === 10) return "十";
+        if (v < 10) return kanjiNum(v);
+        if (v < 20) return "十" + kanjiNum(v % 10);
+        if (v < 30) return kanjiNum(Math.floor(v / 10)) + "十" + (v % 10 !== 0 ? kanjiNum(v % 10) : "");
+        return kanjiNum(Math.floor(v / 10)) + "十" + (v % 10 !== 0 ? kanjiNum(v % 10) : "");
+      }
+      return {
+        month: conv(month) + "月",
+        day: conv(day) + "日"
+      };
+    }
+
+    // Converts numeric strings inside vertical text to full-width to stand upright nicely
+    function toFullWidth(str) {
+      if (!str) return "";
+      return str.replace(/[A-Za-z0-9]/g, function(s) {
+        return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
+      });
+    }
+
+    // Generate QR Code for Phone Access (Handles file:// path safety gracefully)
+    let qrcode = null;
+    function updateQrCode() {
+      el.qrcodeContainer.innerHTML = "";
+      
+      const isLocalFile = window.location.protocol === 'file:';
+      
+      if (isLocalFile) {
+        el.shareUrlText.textContent = "file:/// (ローカルファイル接続)";
+        el.qrInstructions.textContent = "【ご注意】現在はローカル保存モードです。スマホと連携させたい場合は、ファイルをWebサーバー（GitHub Pages等）に配置する必要があります。";
+        el.qrcodeContainer.innerHTML = `
+          <div class="text-xs text-amber-700 bg-amber-50 rounded-xl p-4 text-center max-w-[240px] border border-amber-200">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl mb-2 block"></i>
+            ダウンロードしたファイルをPCで直接開いているため、スマホから通信できません。<br><br>
+            <strong>このPCだけで黒板として使う場合はこのまま変更可能です。</strong>
+          </div>
+        `;
+        return;
+      }
+      
+      const editUrl = `${window.location.origin}${window.location.pathname}?class=${currentClassId}&mode=edit`;
+      el.shareUrlText.textContent = editUrl;
+      el.qrInstructions.textContent = "カメラでQRコードを読み取ると、スマホからこの黒板の内容をリアルタイムに書き換えることができます。";
+      
+      qrcode = new QRCode(el.qrcodeContainer, {
+        text: editUrl,
+        width: 180,
+        height: 180,
+        colorDark : "#1e293b",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+    }
+
+    // Set dynamic scaling (Font Size) directly in CSS variable
+    function updateScale() {
+      const basePercentage = state.fontScale || 100;
+      el.blackboardCanvas.style.fontSize = `${basePercentage}%`;
+      // Clear specific theme classes and update
+      el.blackboardCanvas.className = el.blackboardCanvas.className
+        .replace(/font-school-[a-z]+/g, '') + ` ${state.fontTheme || 'font-school-gothic'}`;
+    }
+
+    // Render Clean Whiteboard / Blackboard view
+    function renderDisplayBoard() {
+      updateScale();
+
+      // 1. DATE Render (Vertical Layout)
+      const dateObj = state.date || {};
+      el.displayDate.innerHTML = `
+        <div class="my-2 font-bold">${dateObj.month || ''}</div>
+        <div class="my-2 font-bold">${dateObj.day || ''}</div>
+        <div class="my-2 font-bold">（${dateObj.week || ''}）</div>
+        <div class="mt-auto mb-2 text-3xl font-normal">${dateObj.bracket || '〔　〕'}</div>
+      `;
+
+      // 2. TIMETABLE Render (Vertical Layout)
+      let timetableHtml = "";
+      const tList = state.timetable || [];
+      tList.forEach((subject, idx) => {
+        if (subject && subject.trim()) {
+          const numberChar = toFullWidth(String(idx + 1));
+          timetableHtml += `
+            <div class="flex flex-col items-center mx-2 md:mx-4">
+              <span class="text-3xl md:text-4xl text-slate-500 font-extrabold mb-1">${numberChar}</span>
+              <span class="font-bold leading-none select-text">${toFullWidth(subject)}</span>
+            </div>
+          `;
+        }
+      });
+      el.displayTimetable.innerHTML = timetableHtml || `<div class="text-slate-300">（なし）</div>`;
+
+      // 3. BELONGINGS Render
+      let belongingsHtml = "";
+      const bText = state.belongings || [];
+      bText.forEach(item => {
+        if (item && item.trim()) {
+          let formattedItem = item.trim();
+          if (!formattedItem.startsWith('・') && !formattedItem.startsWith('・')) {
+            formattedItem = '・' + formattedItem;
+          }
+          belongingsHtml += `<div class="mx-3 md:mx-5 font-bold whitespace-nowrap select-text">${toFullWidth(formattedItem)}</div>`;
+        }
+      });
+      el.displayBelongings.innerHTML = belongingsHtml || `<div class="text-slate-300">・なし</div>`;
+
+      // 4. HOMEWORK Render (Features visual badge like in screenshot)
+      let homeworkHtml = "";
+      const hList = state.homework || [];
+      hList.forEach((hw) => {
+        if (hw.badge || hw.text) {
+          const lines = (hw.text || "").split('\n').map(l => toFullWidth(l)).join('<br>');
+          homeworkHtml += `
+            <div class="flex flex-col items-center mx-4 md:mx-6 select-text">
+              <!-- Circular Badge as seen in screen capture (e.g., 音) -->
+              <div class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 md:border-4 border-slate-700 flex items-center justify-center font-extrabold text-2xl md:text-3xl bg-slate-50 mb-3 shrink-0">
+                ${toFullWidth(hw.badge || '')}
+              </div>
+              <div class="leading-relaxed font-bold text-center tracking-wide text-xl md:text-2xl">${lines}</div>
+            </div>
+          `;
+        }
+      });
+      el.displayHomework.innerHTML = homeworkHtml || `<div class="text-slate-300">なし</div>`;
+
+      // 5. CONTACTS Render
+      let contactsHtml = "";
+      const cText = state.contacts || [];
+      cText.forEach(item => {
+        if (item && item.trim()) {
+          contactsHtml += `<div class="mx-3 md:mx-5 font-bold whitespace-nowrap select-text">${toFullWidth(item)}</div>`;
+        }
+      });
+      el.displayContacts.innerHTML = contactsHtml || `<div class="text-slate-300">※なし</div>`;
+    }
+
+    // Update Input Panel to match Cloud State
+    function updateEditorUI() {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        // Skip updating active focus element to prevent text skipping
+        return;
+      }
+
+      // Date sync
+      if (state.date) {
+        if (state.date.raw) el.inputDate.value = state.date.raw;
+        el.dateMonthOverride.value = state.date.month || "";
+        el.dateDayOverride.value = state.date.day || "";
+        el.dateWeekOverride.value = state.date.week || "";
+        el.dateBracketOverride.value = state.date.bracket || "";
+      }
+
+      // Timetable sync
+      buildTimetableEditorList();
+
+      // Belongings sync
+      el.editorBelongingsText.value = (state.belongings || []).join('\n');
+
+      // Homework sync
+      buildHomeworkEditorList();
+
+      // Contacts sync
+      el.editorContactsText.value = (state.contacts || []).join('\n');
+
+      // Sync settings
+      el.inputScale.value = state.fontScale || 100;
+      el.labelScale.textContent = `${state.fontScale || 100}%`;
+      el.inputFontTheme.value = state.fontTheme || "font-school-gothic";
+    }
+
+    // Build the dynamic timetable edit boxes
+    function buildTimetableEditorList() {
+      const container = el.editorTimetableContainer;
+      container.innerHTML = "";
+      
+      const tList = state.timetable || [];
+      tList.forEach((subject, idx) => {
+        const div = document.createElement('div');
+        div.className = "flex items-center space-x-2";
+        div.innerHTML = `
+          <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-sm font-sans">
+            ${idx + 1}
+          </div>
+          <input type="text" value="${subject}" placeholder="教科・内容" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-sm font-bold input-timetable-subject" data-index="${idx}">
+        `;
+        container.appendChild(div);
+      });
+
+      // Bind events to new input boxes
+      document.querySelectorAll('.input-timetable-subject').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          state.timetable[idx] = e.target.value;
+          triggerAutoSave();
+        });
+      });
+    }
+
+    // Build Homework items list for mobile
+    function buildHomeworkEditorList() {
+      const container = el.editorHomeworkContainer;
+      container.innerHTML = "";
+
+      const hList = state.homework || [];
+      hList.forEach((hw, idx) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = "bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-start space-x-3";
+        itemDiv.innerHTML = `
+          <div class="w-16">
+            <label class="block text-[9px] font-bold text-slate-400 mb-0.5 font-sans">丸文字記号</label>
+            <input type="text" value="${hw.badge || ''}" maxlength="2" placeholder="音" class="w-full text-center py-2 border rounded-lg bg-white font-black text-slate-800 text-sm input-hw-badge" data-index="${idx}">
+          </div>
+          <div class="flex-1">
+            <label class="block text-[9px] font-bold text-slate-400 mb-0.5 font-sans">宿題の詳細（改行可能）</label>
+            <textarea rows="2" class="w-full px-2 py-1.5 border rounded-lg bg-white text-xs font-semibold text-slate-800 input-hw-text" data-index="${idx}" style="resize: none;">${hw.text || ''}</textarea>
+          </div>
+          <button class="text-rose-500 hover:text-rose-600 pt-5 btn-hw-delete" data-index="${idx}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        `;
+        container.appendChild(itemDiv);
+      });
+
+      // Bind events
+      document.querySelectorAll('.input-hw-badge').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          state.homework[idx].badge = e.target.value;
+          triggerAutoSave();
+        });
+      });
+
+      document.querySelectorAll('.input-hw-text').forEach(textarea => {
+        textarea.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          state.homework[idx].text = e.target.value;
+          triggerAutoSave();
+        });
+      });
+
+      document.querySelectorAll('.btn-hw-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.currentTarget.dataset.index);
+          state.homework.splice(idx, 1);
+          buildHomeworkEditorList();
+          saveStateToCloud();
+        });
+      });
+    }
+
+    // Set up user interactive components and behaviors
+    function setupUI() {
+      // 1. Initial Setup Screen Event
+      el.btnStartSetup.addEventListener('click', () => {
+        const enteredId = el.setupClassId.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        if (!enteredId) {
+          alert("クラスIDを入力してください。");
+          return;
+        }
+        currentClassId = enteredId;
+        el.classroomBadge.textContent = currentClassId;
+        
+        // Update URL cleanly
+        const newUrl = `${window.location.origin}${window.location.pathname}?class=${currentClassId}&mode=${isDisplayMode ? 'display' : 'edit'}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+
+        el.setupView.classList.add('hidden');
+        
+        if (isLocalFallback) {
+          loadLocalData();
+          renderDisplayBoard();
+          updateEditorUI();
+        } else {
+          startBoardSync();
+        }
+      });
+
+      // 2. Mode Change (Display Mode / Edit Mode toggle)
+      el.btnToggleMode.addEventListener('click', () => {
+        isDisplayMode = !isDisplayMode;
+        
+        const newUrl = `${window.location.origin}${window.location.pathname}?class=${currentClassId}&mode=${isDisplayMode ? 'display' : 'edit'}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+        
+        updateViewVisibility();
+      });
+
+      el.btnPreviewOnPhone.addEventListener('click', () => {
+        isDisplayMode = true;
+        updateViewVisibility();
+      });
+
+      // 3. Date Selection Engine
+      el.inputDate.addEventListener('change', (e) => {
+        if (!e.target.value) return;
+        const d = new Date(e.target.value);
+        const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+        
+        const kanji = smartDateToKanji(d.getMonth() + 1, d.getDate());
+        state.date = {
+          raw: e.target.value,
+          month: kanji.month,
+          day: kanji.day,
+          week: weekdays[d.getDay()],
+          bracket: "〔　〕"
+        };
+        
+        updateEditorUI();
+        saveStateToCloud();
+      });
+
+      // Quick dates helpers
+      el.btnDateToday.addEventListener('click', () => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        el.inputDate.value = todayStr;
+        el.inputDate.dispatchEvent(new Event('change'));
+      });
+
+      el.btnDateTomorrow.addEventListener('click', () => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        el.inputDate.value = tomorrowStr;
+        el.inputDate.dispatchEvent(new Event('change'));
+      });
+
+      // Override input updates
+      const triggerDateOverride = () => {
+        state.date.month = el.dateMonthOverride.value;
+        state.date.day = el.dateDayOverride.value;
+        state.date.week = el.dateWeekOverride.value;
+        state.date.bracket = el.dateBracketOverride.value;
+        triggerAutoSave();
+      };
+      el.dateMonthOverride.addEventListener('input', triggerDateOverride);
+      el.dateDayOverride.addEventListener('input', triggerDateOverride);
+      el.dateWeekOverride.addEventListener('input', triggerDateOverride);
+      el.dateBracketOverride.addEventListener('input', triggerDateOverride);
+
+      // 4. Timetable Count adjustments
+      el.btnPeriodAdd.addEventListener('click', () => {
+        if (state.timetable.length < 8) {
+          state.timetable.push("");
+          buildTimetableEditorList();
+          saveStateToCloud();
+        }
+      });
+      el.btnPeriodRemove.addEventListener('click', () => {
+        if (state.timetable.length > 1) {
+          state.timetable.pop();
+          buildTimetableEditorList();
+          saveStateToCloud();
+        }
+      });
+
+      // 5. Belongings text change action
+      el.editorBelongingsText.addEventListener('input', (e) => {
+        state.belongings = e.target.value.split('\n');
+        triggerAutoSave();
+      });
+      el.btnBelongingsClear.addEventListener('click', () => {
+        el.editorBelongingsText.value = "";
+        state.belongings = [];
+        saveStateToCloud();
+      });
+
+      // 6. Homework addition & deletion
+      el.btnHomeworkAdd.addEventListener('click', () => {
+        if (state.homework.length < 5) {
+          state.homework.push({ badge: "新", text: "" });
+          buildHomeworkEditorList();
+          saveStateToCloud();
+        }
+      });
+
+      // 7. Contacts text change action
+      el.editorContactsText.addEventListener('input', (e) => {
+        state.contacts = e.target.value.split('\n');
+        triggerAutoSave();
+      });
+      el.btnContactsClear.addEventListener('click', () => {
+        el.editorContactsText.value = "";
+        state.contacts = [];
+        saveStateToCloud();
+      });
+
+      // 8. Size and theme controller
+      el.inputScale.addEventListener('input', (e) => {
+        state.fontScale = parseInt(e.target.value);
+        el.labelScale.textContent = `${state.fontScale}%`;
+        updateScale();
+        triggerAutoSave();
+      });
+
+      el.inputFontTheme.addEventListener('change', (e) => {
+        state.fontTheme = e.target.value;
+        updateScale();
+        saveStateToCloud();
+      });
+
+      el.btnForceSync.addEventListener('click', () => {
+        saveStateToCloud();
+      });
+
+      // 9. Display overlay elements
+      el.btnShowQr.addEventListener('click', () => {
+        updateQrCode();
+        el.qrOverlay.classList.remove('hidden');
+      });
+      el.btnCloseQr.addEventListener('click', () => {
+        el.qrOverlay.classList.add('hidden');
+      });
+      el.qrOverlay.addEventListener('click', (e) => {
+        if (e.target === el.qrOverlay) el.qrOverlay.classList.add('hidden');
+      });
+
+      // Clipboard feature utilizing secure fallback for frames
+      el.btnCopyUrl.addEventListener('click', () => {
+        const textToCopy = el.shareUrlText.textContent;
+        const tempInput = document.createElement("input");
+        tempInput.value = textToCopy;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        
+        const originalText = el.btnCopyUrl.innerHTML;
+        el.btnCopyUrl.innerHTML = `<i class="fa-solid fa-check mr-1"></i>コピー完了！`;
+        setTimeout(() => {
+          el.btnCopyUrl.innerHTML = originalText;
+        }, 2000);
+      });
+
+      // Scaling actions from blackboard view
+      el.btnZoomIn.addEventListener('click', () => {
+        state.fontScale = Math.min((state.fontScale || 100) + 5, 140);
+        updateScale();
+        saveStateToCloud();
+      });
+      el.btnZoomOut.addEventListener('click', () => {
+        state.fontScale = Math.max((state.fontScale || 100) - 5, 60);
+        updateScale();
+        saveStateToCloud();
+      });
+
+      // Fullscreen implementation
+      el.btnFullscreen.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.warn(`Error attempting to enable full-screen mode: ${err.message}`);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      });
+    }
+
+    // Toggle routing display state classes
+    function updateViewVisibility() {
+      if (isDisplayMode) {
+        el.displayView.classList.remove('hidden');
+        el.editorView.classList.add('hidden');
+        el.btnToggleMode.className = "bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded text-xs font-bold transition flex items-center space-x-1";
+        el.toggleModeText.textContent = "スマホ編集画面へ";
+        document.getElementById('header-bar').classList.remove('bg-slate-800');
+        document.getElementById('header-bar').classList.add('bg-slate-900');
+        
+        renderDisplayBoard();
+      } else {
+        el.displayView.classList.add('hidden');
+        el.editorView.classList.remove('hidden');
+        el.btnToggleMode.className = "bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-bold transition flex items-center space-x-1";
+        el.toggleModeText.textContent = "電子黒板（表示）へ";
+        document.getElementById('header-bar').classList.remove('bg-slate-900');
+        document.getElementById('header-bar').classList.add('bg-slate-800');
+        
+        updateEditorUI();
+      }
+    }
+
+    // Execution trigger on Load
+    window.onload = function() {
+      initAuthAndRouting();
+    };
+
+  </script>
+</body>
+</html>
