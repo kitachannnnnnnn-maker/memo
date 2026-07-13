@@ -45,13 +45,13 @@
     </div>
   </header>
 
-  <main id="board-main" style="font-size: 20px;">
+  <main id="board-main">
     <div id="view-display" class="board-container">
       <div class="board-col"><h2 class="font-bold">連</h2><div class="section-line"></div><div id="disp-notice" class="vertical-container"></div></div>
       <div class="board-col"><h2 class="font-bold">宿</h2><div class="section-line"></div><div id="disp-homework" class="vertical-container"></div></div>
       <div class="board-col"><h2 class="font-bold">持</h2><div class="section-line"></div><div id="disp-items" class="vertical-container"></div></div>
       <div class="board-col narrow"><h2 class="font-bold">時</h2><div class="section-line"></div><div id="disp-schedule" class="horizontal-container"></div></div>
-      <div class="board-col narrow no-border"><div id="disp-date" class="vertical-text font-bold text-xl pt-2" title="クリックで翌日へ"></div></div>
+      <div class="board-col narrow no-border"><div id="disp-date" class="vertical-text font-bold pt-2" title="クリックで翌日へ"></div></div>
     </div>
 
     <div id="view-editor" class="hidden max-w-lg mx-auto bg-slate-50 p-4 rounded-xl border">
@@ -68,11 +68,15 @@
   <script>
     const firebaseConfig = { apiKey: "AIzaSyB-hHkL9jyoudu3bNyhidZIUCKlUaaXUX8", projectId: "electronic-board-app" };
     const boardId = "main";
-    let currentSize = 20;
+    
+    // ズーム倍率の初期化
+    let currentSize = parseInt(localStorage.getItem('fontSize')) || 20;
+    document.getElementById('board-main').style.fontSize = currentSize + 'px';
 
     const changeFontSize = (delta) => {
       currentSize = Math.max(12, Math.min(48, currentSize + delta));
       document.getElementById('board-main').style.fontSize = currentSize + 'px';
+      localStorage.setItem('fontSize', currentSize);
     };
 
     const toKanji = (numStr) => {
