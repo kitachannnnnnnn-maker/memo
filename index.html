@@ -9,59 +9,55 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <style>
     body { background-color: #fff; font-family: sans-serif; transition: all 0.3s; }
-    
-    /* レイアウト */
     .vertical-text { writing-mode: vertical-rl; text-orientation: upright; cursor: pointer; color: #000; }
     .section-line { border-bottom: 2px solid #334155; margin-bottom: 0.5rem; width: 100%; }
-    .board-container { display: flex; flex-direction: row; justify-content: flex-start; overflow-x: hidden; height: 85vh; gap: 0.25rem; }
-    .board-col { display: flex; flex-direction: column; align-items: center; border-right: 2px solid #334155; padding: 0 0.25rem; flex-grow: 1; }
-    .board-col.narrow { min-width: 50px; }
+    .board-container { display: flex; flex-direction: row; justify-content: flex-start; overflow-x: hidden; height: 85vh; gap: 0.5rem; }
+    .board-col { display: flex; flex-direction: column; align-items: center; border-right: 2px solid #334155; padding: 0 0.5rem; flex-grow: 1; }
+    .board-col.narrow { min-width: 60px; }
     .board-col.no-border { border-right: none; }
-    
     .vertical-container { writing-mode: vertical-rl; text-orientation: upright; display: flex; flex-direction: column; align-items: flex-start; height: 100%; min-width: 1.5rem; }
     .horizontal-container { display: flex; flex-direction: column; width: 100%; height: 100%; }
-    
     .editable { min-height: 1.5rem; padding: 0.25rem; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s; width: 100%; }
     .editable:hover { background-color: #f1f5f9; }
-    .edit-input { width: 100%; padding: 4px; border: 2px solid #3b82f6; border-radius: 4px; outline: none; }
-    .zoom-btn { background: #f1f5f9; padding: 4px 12px; border-radius: 999px; font-weight: bold; }
+    .edit-input { width: 100%; padding: 8px; border: 2px solid #3b82f6; border-radius: 4px; outline: none; text-align: left; font-size: inherit; }
+    .zoom-btn { background: #f1f5f9; padding: 4px 16px; border-radius: 999px; font-weight: bold; }
   </style>
 </head>
-<body class="p-2" id="app-body">
+<body class="p-4" id="app-body">
 
-  <header id="app-header" class="flex justify-between items-center mb-4">
-    <div class="flex items-center gap-3">
-        <h1 class="text-xl font-bold">メモ</h1>
+  <header id="app-header" class="flex justify-between items-center mb-6">
+    <div class="flex items-center gap-4">
+        <h1 class="text-2xl font-bold">メモ</h1>
         <button onclick="changeFontSize(-2)" class="zoom-btn">A-</button>
         <button onclick="changeFontSize(2)" class="zoom-btn">A+</button>
     </div>
-    <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded text-sm">
-            <input type="text" id="edit-month" class="w-8 text-center bg-transparent border-b border-gray-400" placeholder="7">月
-            <input type="text" id="edit-day" class="w-8 text-center bg-transparent border-b border-gray-400" placeholder="13">日
-            (<input type="text" id="edit-week" class="w-6 text-center bg-transparent border-b border-gray-400" placeholder="月">)
-            <button onclick="saveDate()" class="bg-blue-500 text-white px-2 py-0.5 rounded">保存</button>
+    <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 bg-gray-100 p-2 rounded">
+            <input type="text" id="edit-month" class="w-10 text-center bg-transparent border-b border-gray-400" placeholder="7">月
+            <input type="text" id="edit-day" class="w-10 text-center bg-transparent border-b border-gray-400" placeholder="13">日
+            (<input type="text" id="edit-week" class="w-8 text-center bg-transparent border-b border-gray-400" placeholder="月">)
+            <button onclick="saveDate()" class="bg-blue-600 text-white px-4 py-1 rounded ml-2">保存</button>
         </div>
-        <button id="mode-toggle" class="bg-slate-600 text-white px-4 py-2 rounded-lg text-sm">編集モード</button>
+        <button id="mode-toggle" class="bg-slate-700 text-white px-8 py-2 rounded-lg font-bold">編集モード</button>
     </div>
   </header>
 
   <main id="board-main" class="relative">
     <div id="view-display" class="board-container">
-      <div class="board-col"><h2 class="font-bold">連</h2><div class="section-line"></div><div id="disp-notice" class="vertical-container"></div></div>
-      <div class="board-col"><h2 class="font-bold">宿</h2><div class="section-line"></div><div id="disp-homework" class="vertical-container"></div></div>
-      <div class="board-col"><h2 class="font-bold">持</h2><div class="section-line"></div><div id="disp-items" class="vertical-container"></div></div>
-      <div class="board-col narrow"><h2 class="font-bold">時</h2><div class="section-line"></div><div id="disp-schedule" class="horizontal-container"></div></div>
+      <div class="board-col"><h2 class="font-bold board-heading">連</h2><div class="section-line"></div><div id="disp-notice" class="vertical-container"></div></div>
+      <div class="board-col"><h2 class="font-bold board-heading">宿</h2><div class="section-line"></div><div id="disp-homework" class="vertical-container"></div></div>
+      <div class="board-col"><h2 class="font-bold board-heading">持</h2><div class="section-line"></div><div id="disp-items" class="vertical-container"></div></div>
+      <div class="board-col narrow"><h2 class="font-bold board-heading">時</h2><div class="section-line"></div><div id="disp-schedule" class="horizontal-container"></div></div>
       <div class="board-col narrow no-border"><div id="disp-date" class="vertical-text font-bold pt-2 hover:opacity-70" onclick="incrementDate()"></div></div>
     </div>
 
-    <div id="view-editor" class="hidden max-w-lg mx-auto bg-slate-50 p-4 rounded-xl border">
-      <h2 class="font-bold mb-4 border-b pb-2">編集モード：項目管理</h2>
-      <div class="space-y-6">
-        <div id="list-schedule"><label class="block text-sm font-bold">時間割</label><div class="list-container flex flex-col gap-2"></div></div>
-        <div id="list-items"><label class="block text-sm font-bold">持ち物</label><div class="list-container flex flex-col gap-2"></div></div>
-        <div id="list-homework"><label class="block text-sm font-bold">宿題</label><div class="list-container flex flex-col gap-2"></div></div>
-        <div id="list-notice"><label class="block text-sm font-bold">連絡</label><div class="list-container flex flex-col gap-2"></div></div>
+    <div id="view-editor" class="hidden max-w-4xl mx-auto bg-white p-10 rounded-xl border-2 shadow-2xl">
+      <h2 class="font-bold mb-8 border-b-2 pb-4 text-4xl" id="editor-title">項目編集</h2>
+      <div class="space-y-12" id="editor-content">
+        <div id="list-schedule"><h3 class="font-bold text-3xl mb-4">時間割</h3><div class="list-container flex flex-col gap-3"></div><button class="mt-4 w-full bg-green-600 text-white py-3 rounded-lg font-bold shadow-lg" onclick="addItem('schedule')">＋ 追加</button></div>
+        <div id="list-items"><h3 class="font-bold text-3xl mb-4">持ち物</h3><div class="list-container flex flex-col gap-3"></div><button class="mt-4 w-full bg-green-600 text-white py-3 rounded-lg font-bold shadow-lg" onclick="addItem('items')">＋ 追加</button></div>
+        <div id="list-homework"><h3 class="font-bold text-3xl mb-4">宿題</h3><div class="list-container flex flex-col gap-3"></div><button class="mt-4 w-full bg-green-600 text-white py-3 rounded-lg font-bold shadow-lg" onclick="addItem('homework')">＋ 追加</button></div>
+        <div id="list-notice"><h3 class="font-bold text-3xl mb-4">連絡</h3><div class="list-container flex flex-col gap-3"></div><button class="mt-4 w-full bg-green-600 text-white py-3 rounded-lg font-bold shadow-lg" onclick="addItem('notice')">＋ 追加</button></div>
       </div>
     </div>
   </main>
@@ -70,16 +66,28 @@
     const firebaseConfig = { apiKey: "AIzaSyB-hHkL9jyoudu3bNyhidZIUCKlUaaXUX8", projectId: "electronic-board-app" };
     const boardId = "main";
     
+    // 漢数字変換用
+    const toKanji = (num) => {
+        const kanji = ['〇','一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十','二十一','二十二','二十三','二十四','二十五','二十六','二十七','二十八','二十九','三十','三十一'];
+        return kanji[parseInt(num)] || num;
+    };
+
     let currentSize = parseInt(localStorage.getItem('fontSize')) || 20;
     const applyFontSize = (size) => {
         document.getElementById('board-main').style.fontSize = size + 'px';
+        const headings = document.querySelectorAll('.board-heading');
+        headings.forEach(h => h.style.fontSize = (size * 1.5) + 'px');
         const dispDate = document.getElementById('disp-date');
-        if(dispDate) dispDate.style.fontSize = (size * 1.2) + 'px';
+        if(dispDate) dispDate.style.fontSize = (size * 1.4) + 'px';
+        document.getElementById('editor-title').style.fontSize = (size * 2) + 'px';
+        document.getElementById('editor-content').style.fontSize = size + 'px';
+        const editHeadings = document.querySelectorAll('#editor-content h3');
+        editHeadings.forEach(h => h.style.fontSize = (size * 1.5) + 'px');
     };
     applyFontSize(currentSize);
 
     const changeFontSize = (delta) => {
-      currentSize = Math.max(12, Math.min(64, currentSize + delta));
+      currentSize = Math.max(12, Math.min(60, currentSize + delta));
       applyFontSize(currentSize);
       localStorage.setItem('fontSize', currentSize);
     };
@@ -102,12 +110,19 @@
         let nextD = d + 1;
         let nextM = m;
         if (nextD > daysInMonth[m]) { nextD = 1; nextM = (m % 12) + 1; }
-        
         const weekList = ['日','月','火','水','木','金','土'];
         const currentWeekIdx = weekList.indexOf(document.getElementById('edit-week').value) || 0;
         const nextWeek = weekList[(currentWeekIdx + 1) % 7];
-
         db.collection("boards").doc(boardId).set({ month: nextM.toString(), day: nextD.toString(), week: nextWeek }, { merge: true });
+    };
+
+    const addItem = (field) => {
+        db.collection("boards").doc(boardId).get().then(doc => {
+            let data = doc.data() || {};
+            let list = data[field] || [];
+            list.push("");
+            db.collection("boards").doc(boardId).set({ [field]: list }, { merge: true });
+        });
     };
 
     const updateItem = (field, index, value) => {
@@ -159,11 +174,11 @@
             cont.innerHTML = "";
             (data[field] || []).forEach((val, idx) => {
                 const div = document.createElement('div');
-                div.className = "flex gap-2 items-center";
+                div.className = "flex gap-4 items-center";
                 let label = (field === 'schedule') ? (idx + 1) + "." : ((field === 'notice') ? '※' : '・');
-                div.innerHTML = `<span class="text-gray-400 font-bold w-6 text-right">${label}</span>
-                                 <input type="text" value="${val}" class="w-full p-1 border rounded" onblur="updateItem('${field}', ${idx}, this.value)">
-                                 <button type="button" class="px-2 bg-red-100 text-red-600 rounded" onclick="deleteItem('${field}', ${idx})">×</button>`;
+                div.innerHTML = `<span class="text-gray-500 font-bold w-12 text-right">${label}</span>
+                                 <input type="text" value="${val}" class="w-full p-3 border rounded text-left" onblur="updateItem('${field}', ${idx}, this.value)">
+                                 <button type="button" class="px-6 py-2 bg-red-100 text-red-700 rounded font-bold" onclick="deleteItem('${field}', ${idx})">削除</button>`;
                 cont.appendChild(div);
             });
         });
@@ -182,8 +197,10 @@
 
     db.collection("boards").doc(boardId).onSnapshot(doc => {
         const d = doc.data() || {};
+        const monthK = toKanji(d.month || "");
+        const dayK = toKanji(d.day || "");
         const weekStr = d.week ? `︵${d.week}︶` : "";
-        document.getElementById('disp-date').textContent = `${d.month||""}月${d.day||""}日${weekStr}`;
+        document.getElementById('disp-date').textContent = `${monthK}月${dayK}日${weekStr}`;
         document.getElementById('edit-month').value = d.month || "";
         document.getElementById('edit-day').value = d.day || "";
         document.getElementById('edit-week').value = d.week || "";
