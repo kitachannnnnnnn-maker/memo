@@ -38,14 +38,15 @@
       font-family: 'Sawarabi Mincho', serif;
     }
 
-    /* 黒板・ホワイトボードの質感調整 */
-    .board-shadow {
-      box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+    /* 縦書き内の半角数字・英字を直立・または縦中横（2文字まで並べて表示）にする設定 */
+    .tate-chu-yoko {
+      text-combine-upright: all;
+      -webkit-text-combine-upright: all;
     }
 
-    /* 入力欄のプレースホルダー色調整 */
-    ::placeholder {
-      color: #cbd5e1;
+    /* 黒板風の境界線デザイン（スクリーンショットに近い、濃いダークグレーのしっかりした線） */
+    .board-line {
+      border-color: #4b5563; /* slate-600 */
     }
 
     /* 印刷/フルスクリーン時のマージン調整 */
@@ -76,7 +77,7 @@
       <!-- MODE SWITCHER -->
       <div class="flex items-center space-x-2">
         <div id="connection-status" class="flex items-center space-x-1.5 bg-slate-900 px-2.5 py-1 rounded text-xs text-amber-400">
-          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block" id="status-dot"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse inline-block" id="status-dot"></span>
           <span id="status-text">接続中...</span>
         </div>
         
@@ -104,7 +105,7 @@
           <div class="space-y-4">
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">クラスID (アルファベット・数字)</label>
-              <input type="text" id="setup-class-id" placeholder="例: 3nenshigo, class-5a" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-mono text-lg text-center" />
+              <input type="text" id="setup-class-id" placeholder="例: 3-1, class5a" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-mono text-lg text-center" />
             </div>
             
             <button id="btn-start-setup" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/20 transition flex items-center justify-center space-x-2">
@@ -123,61 +124,61 @@
       <div id="view-display" class="hidden flex-1 w-full h-full bg-[#f8f9fa] flex flex-col p-4 md:p-6 select-none relative overflow-hidden">
         
         <!-- Board Inner Shadow Container with thick Borders -->
-        <div class="flex-1 w-full h-full border-4 md:border-8 border-slate-700 bg-white rounded-xl shadow-inner flex flex-row overflow-hidden relative font-school-gothic text-slate-800" id="blackboard-canvas">
+        <div class="flex-1 w-full h-full border-[6px] md:border-[10px] border-slate-700 bg-white rounded-xl shadow-inner flex flex-row overflow-hidden relative font-school-gothic text-slate-800" id="blackboard-canvas">
           
-          <!-- LEFT COLUMN: 連 (Announcements) -->
-          <div class="flex-1 flex flex-col border-r-4 border-slate-700 h-full">
-            <div class="h-[12%] flex items-center justify-center text-3xl md:text-4xl font-extrabold border-b-4 border-slate-700 bg-slate-50/50">
+          <!-- COLUMN 1 (Leftmost): 連 (Announcements) -->
+          <div class="flex-1 flex flex-col border-r-[5px] border-slate-700 h-full">
+            <div class="h-[13%] flex items-center justify-center text-4xl md:text-5xl font-black border-b-[5px] border-slate-700 bg-slate-50/50">
               連
             </div>
-            <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-contacts">
+            <div class="flex-1 p-6 md:p-8 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-contacts">
               <!-- Rendered via JS -->
             </div>
           </div>
 
-          <!-- MIDDLE LEFT COLUMN: 宿 (Homework) -->
-          <div class="flex-1 flex flex-col border-r-4 border-slate-700 h-full">
-            <div class="h-[12%] flex items-center justify-center text-3xl md:text-4xl font-extrabold border-b-4 border-slate-700 bg-slate-50/50 relative">
+          <!-- COLUMN 2 (Middle Left): 宿 (Homework) -->
+          <div class="flex-1 flex flex-col border-r-[5px] border-slate-700 h-full">
+            <div class="h-[13%] flex items-center justify-center text-4xl md:text-5xl font-black border-b-[5px] border-slate-700 bg-slate-50/50 relative">
               宿
             </div>
-            <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-homework">
+            <div class="flex-1 p-6 md:p-8 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-homework">
               <!-- Rendered via JS -->
             </div>
           </div>
 
-          <!-- MIDDLE RIGHT COLUMN: 持 (Belongings) -->
-          <div class="flex-1 flex flex-col border-r-4 border-slate-700 h-full relative">
-            <div class="h-[12%] flex items-center justify-center text-3xl md:text-4xl font-extrabold border-b-4 border-slate-700 bg-slate-50/50">
-              <!-- Small X icon on header left as in screenshot -->
-              <span class="absolute left-3 top-3 w-6 h-6 md:w-8 md:h-8 rounded-full bg-slate-600 text-white flex items-center justify-center text-xs md:text-sm font-sans">×</span>
+          <!-- COLUMN 3 (Middle Right): 持 (Belongings) -->
+          <div class="flex-1 flex flex-col border-r-[5px] border-slate-700 h-full relative">
+            <div class="h-[13%] flex items-center justify-center text-4xl md:text-5xl font-black border-b-[5px] border-slate-700 bg-slate-50/50 relative">
+              <!-- Screenshot: Small "X" icon on header left inside a dark circle -->
+              <span class="absolute left-4 top-4 w-7 h-7 md:w-9 md:h-9 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm md:text-lg font-sans font-black">×</span>
               持
             </div>
-            <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-belongings">
+            <div class="flex-1 p-6 md:p-8 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-belongings">
               <!-- Rendered via JS -->
             </div>
           </div>
 
-          <!-- RIGHT COLUMN: 時 (Timetable) -->
-          <div class="flex-1 flex flex-col border-r-4 border-slate-700 h-full">
-            <div class="h-[12%] flex items-center justify-center text-3xl md:text-4xl font-extrabold border-b-4 border-slate-700 bg-slate-50/50">
+          <!-- COLUMN 4 (Right): 時 (Timetable) -->
+          <div class="flex-1 flex flex-col border-r-[5px] border-slate-700 h-full">
+            <div class="h-[13%] flex items-center justify-center text-4xl md:text-5xl font-black border-b-[5px] border-slate-700 bg-slate-50/50">
               時
             </div>
-            <div class="flex-1 p-4 md:p-6 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-timetable">
+            <div class="flex-1 p-6 md:p-8 overflow-hidden flex flex-row-reverse justify-around items-start vertical-text leading-relaxed text-2xl md:text-3xl lg:text-4xl font-bold tracking-wider" id="display-timetable">
               <!-- Rendered via JS -->
             </div>
           </div>
 
-          <!-- RIGHTMOST NARROW COLUMN: 日付 (Date) -->
-          <div class="w-[12%] min-w-[70px] md:min-w-[100px] border-slate-700 h-full flex flex-col justify-center items-center py-6 bg-slate-50/30">
-            <div class="flex-1 flex flex-col justify-between items-center vertical-text text-2xl md:text-3xl lg:text-4xl font-black tracking-widest text-center" id="display-date">
+          <!-- COLUMN 5 (Rightmost Narrow): 日付 (Date) -->
+          <div class="w-[12%] min-w-[80px] md:min-w-[120px] h-full flex flex-col justify-center items-center py-8 bg-slate-50/10">
+            <div class="flex-1 flex flex-col justify-between items-center vertical-text text-3xl md:text-4xl lg:text-5xl font-black tracking-widest text-center" id="display-date">
               <!-- Rendered via JS -->
             </div>
           </div>
 
         </div>
 
-        <!-- Floating Utilities Panel on Whiteboard Screen (Bottom Right) -->
-        <div class="absolute bottom-10 right-10 flex space-x-2 bg-slate-900/90 backdrop-blur text-white px-3 py-2 rounded-xl shadow-2xl opacity-10 hover:opacity-100 transition duration-300">
+        <!-- Floating Utilities Panel on Screen (Bottom Right) -->
+        <div class="absolute bottom-10 right-10 flex space-x-2 bg-slate-900/95 backdrop-blur text-white px-3 py-2 rounded-xl shadow-2xl opacity-10 hover:opacity-100 transition duration-300">
           <button id="btn-fullscreen" title="全画面表示" class="p-2 hover:bg-slate-700 rounded transition text-base">
             <i class="fa-solid fa-expand"></i>
           </button>
@@ -277,7 +278,7 @@
                 <input type="text" id="date-week-override" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-500 focus:outline-none font-bold" placeholder="月">
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 mb-0.5">括弧/補足</label>
+                <label class="block text-[10px] font-bold text-slate-400 mb-0.5">括弧・下部補足</label>
                 <input type="text" id="date-bracket-override" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-500 focus:outline-none font-bold" placeholder="〔　〕">
               </div>
             </div>
@@ -294,10 +295,10 @@
               </div>
               <div class="flex items-center space-x-1.5">
                 <button id="btn-period-add" class="bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center">
-                  <i class="fa-solid fa-plus mr-1"></i>増やす
+                  <i class="fa-solid fa-plus mr-1"></i>時間追加
                 </button>
                 <button id="btn-period-remove" class="bg-slate-100 hover:bg-rose-100 hover:text-rose-600 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center">
-                  <i class="fa-solid fa-minus mr-1"></i>減らす
+                  <i class="fa-solid fa-minus mr-1"></i>時間削減
                 </button>
               </div>
             </div>
@@ -317,14 +318,16 @@
                 </span>
                 <span>3. 持ち物 (持)</span>
               </div>
-              <button id="btn-belongings-clear" class="text-xs text-rose-500 hover:text-rose-600 font-bold transition">すべて消去</button>
+              <div class="flex items-center space-x-1.5">
+                <button id="btn-belongings-add" class="bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center">
+                  <i class="fa-solid fa-plus mr-1"></i>追加
+                </button>
+                <button id="btn-belongings-clear" class="text-xs text-rose-500 hover:text-rose-600 font-bold transition">すべて消去</button>
+              </div>
             </div>
             
-            <div class="space-y-3">
-              <div class="relative">
-                <textarea id="editor-belongings-text" rows="4" placeholder="・えのぐセット&#10;・エプロン C&#10;・たいいくかんシューズ" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 font-medium tracking-wide leading-relaxed" style="resize: none;"></textarea>
-              </div>
-              <p class="text-slate-400 text-[10px]">改行すると別々の行（弾）として縦書き表示されます。「・」は入力時に自動補完されます。</p>
+            <div class="space-y-3" id="editor-belongings-container">
+              <!-- Rendered dynamically via JS to avoid cursor jumping -->
             </div>
           </section>
 
@@ -359,12 +362,16 @@
                 </span>
                 <span>5. 連絡 (連)</span>
               </div>
-              <button id="btn-contacts-clear" class="text-xs text-rose-500 hover:text-rose-600 font-bold transition">すべて消去</button>
+              <div class="flex items-center space-x-1.5">
+                <button id="btn-contacts-add" class="bg-slate-100 hover:bg-indigo-100 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center">
+                  <i class="fa-solid fa-plus mr-1"></i>追加
+                </button>
+                <button id="btn-contacts-clear" class="text-xs text-rose-500 hover:text-rose-600 font-bold transition">すべて消去</button>
+              </div>
             </div>
             
-            <div class="space-y-3">
-              <textarea id="editor-contacts-text" rows="4" placeholder="※15:00げこう&#10;※しゅくだいをおすれない&#10;※あしたはズックばこもちかえり" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-slate-800 font-medium tracking-wide leading-relaxed" style="resize: none;"></textarea>
-              <p class="text-slate-400 text-[10px]">改行すると次の項目になります。「※」や「・」から始めると黒板らしさが増します。</p>
+            <div class="space-y-3" id="editor-contacts-container">
+              <!-- Rendered dynamically -->
             </div>
           </section>
 
@@ -438,22 +445,28 @@
     // Determine if configuration is actual Firebase config or placeholder mock-ups
     const isMockOrEmpty = !firebaseConfig || firebaseConfig.apiKey === "mock-api-key" || firebaseConfig.apiKey === "";
 
-    // App state holding current settings
+    // App state holding current settings (Precisely aligned with user's screen capture)
     let state = {
       date: {
-        raw: "",
+        raw: "2026-07-13",
         month: "七月",
         day: "十三日",
         week: "月",
         bracket: "〔　〕"
       },
       timetable: ["国語", "家庭", "家庭", "理科", "算数", "社会"],
-      belongings: ["・エプロン C", "・", "・"],
+      belongings: [
+        "・", 
+        "・", 
+        "・エプロン　C"
+      ],
       homework: [
         { badge: "音", text: "国語 86から87\n〔　〕" },
         { badge: "が", text: "自学 1.5" }
       ],
-      contacts: ["※ ※ ※"],
+      contacts: [
+        "※　※　※"
+      ],
       fontScale: 100,
       fontTheme: "font-school-gothic"
     };
@@ -523,15 +536,22 @@
       dateDayOverride: document.getElementById('date-day-override'),
       dateWeekOverride: document.getElementById('date-week-override'),
       dateBracketOverride: document.getElementById('date-bracket-override'),
+      
       btnPeriodAdd: document.getElementById('btn-period-add'),
       btnPeriodRemove: document.getElementById('btn-period-remove'),
       editorTimetableContainer: document.getElementById('editor-timetable-container'),
+      
+      btnBelongingsAdd: document.getElementById('btn-belongings-add'),
       btnBelongingsClear: document.getElementById('btn-belongings-clear'),
-      editorBelongingsText: document.getElementById('editor-belongings-text'),
+      editorBelongingsContainer: document.getElementById('editor-belongings-container'),
+      
       btnHomeworkAdd: document.getElementById('btn-homework-add'),
       editorHomeworkContainer: document.getElementById('editor-homework-container'),
+      
+      btnContactsAdd: document.getElementById('btn-contacts-add'),
       btnContactsClear: document.getElementById('btn-contacts-clear'),
-      editorContactsText: document.getElementById('editor-contacts-text'),
+      editorContactsContainer: document.getElementById('editor-contacts-container'),
+      
       inputScale: document.getElementById('input-scale'),
       labelScale: document.getElementById('label-scale'),
       inputFontTheme: document.getElementById('input-font-theme'),
@@ -592,7 +612,7 @@
         } else {
           startBoardSync();
         }
-        setupUI();
+        updateViewVisibility();
       } else {
         // Show classroom selector screen first
         el.setupView.classList.remove('hidden');
@@ -751,12 +771,21 @@
       };
     }
 
-    // Converts numeric strings inside vertical text to full-width to stand upright nicely
-    function toFullWidth(str) {
-      if (!str) return "";
-      return str.replace(/[A-Za-z0-9]/g, function(s) {
-        return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
-      });
+    // Helper to format text inside vertical layout to keep numbers/alphabets standing up
+    // Wrap numeric/alphabet sequences in <span class="tate-chu-yoko">
+    function makeUprightHtml(text) {
+      if (!text) return "";
+      
+      // Replace single full-width characters and wrap alphanumeric sequences
+      // 1. Convert standard punctuation
+      let formatted = text
+        .replace(/\(/g, "（")
+        .replace(/\)/g, "）");
+      
+      // 2. Detect 1-3 digits or letters to group them into Tate-Chu-Yoko
+      formatted = formatted.replace(/([A-Za-z0-9\.\-\:\/]{1,3})/g, '<span class="tate-chu-yoko">$1</span>');
+      
+      return formatted;
     }
 
     // Generate QR Code for Phone Access (Handles file:// path safety gracefully)
@@ -770,7 +799,7 @@
         el.shareUrlText.textContent = "file:/// (ローカルファイル接続)";
         el.qrInstructions.textContent = "【ご注意】現在はローカル保存モードです。スマホと連携させたい場合は、ファイルをWebサーバー（GitHub Pages等）に配置する必要があります。";
         el.qrcodeContainer.innerHTML = `
-          <div class="text-xs text-amber-700 bg-amber-50 rounded-xl p-4 text-center max-w-[240px] border border-amber-200">
+          <div class="text-xs text-amber-700 bg-amber-50 rounded-xl p-4 text-center max-w-[240px] border border-amber-200 font-sans">
             <i class="fa-solid fa-triangle-exclamation text-amber-500 text-2xl mb-2 block"></i>
             ダウンロードしたファイルをPCで直接開いているため、スマホから通信できません。<br><br>
             <strong>このPCだけで黒板として使う場合はこのまま変更可能です。</strong>
@@ -802,83 +831,107 @@
         .replace(/font-school-[a-z]+/g, '') + ` ${state.fontTheme || 'font-school-gothic'}`;
     }
 
-    // Render Clean Whiteboard / Blackboard view
+    // Render Clean Whiteboard / Blackboard view (Strict match to user image layout)
     function renderDisplayBoard() {
       updateScale();
 
-      // 1. DATE Render (Vertical Layout)
+      // 1. DATE Render (Vertical Layout - Rightmost)
       const dateObj = state.date || {};
+      
+      // Draw standard curved parentheses for weekday
+      const weekHtml = dateObj.week ? `<div class="my-1 font-bold leading-none text-2xl md:text-3xl text-slate-500">（${dateObj.week}）</div>` : "";
+      
       el.displayDate.innerHTML = `
-        <div class="my-2 font-bold">${dateObj.month || ''}</div>
-        <div class="my-2 font-bold">${dateObj.day || ''}</div>
-        <div class="my-2 font-bold">（${dateObj.week || ''}）</div>
-        <div class="mt-auto mb-2 text-3xl font-normal">${dateObj.bracket || '〔　〕'}</div>
+        <div class="my-1 font-black tracking-widest text-[0.95em]">${dateObj.month || ''}</div>
+        <div class="my-3 font-black tracking-widest text-[0.95em]">${dateObj.day || ''}</div>
+        ${weekHtml}
+        <div class="mt-auto mb-1 text-3xl md:text-4xl text-slate-400 font-normal leading-none">${dateObj.bracket || '〔　〕'}</div>
       `;
 
-      // 2. TIMETABLE Render (Vertical Layout)
+      // 2. TIMETABLE Render (時)
       let timetableHtml = "";
       const tList = state.timetable || [];
       tList.forEach((subject, idx) => {
         if (subject && subject.trim()) {
-          const numberChar = toFullWidth(String(idx + 1));
+          // Recreate precise layout: Digit on top, subject text vertically flowing below
           timetableHtml += `
-            <div class="flex flex-col items-center mx-2 md:mx-4">
-              <span class="text-3xl md:text-4xl text-slate-500 font-extrabold mb-1">${numberChar}</span>
-              <span class="font-bold leading-none select-text">${toFullWidth(subject)}</span>
+            <div class="flex flex-col items-center mx-1.5 md:mx-3 shrink-0">
+              <span class="text-3xl md:text-4xl text-slate-700 font-black mb-2 select-none tate-chu-yoko">${idx + 1}</span>
+              <span class="font-extrabold leading-tight text-[0.9em] md:text-[0.95em] select-text tracking-wide">${makeUprightHtml(subject)}</span>
             </div>
           `;
         }
       });
       el.displayTimetable.innerHTML = timetableHtml || `<div class="text-slate-300">（なし）</div>`;
 
-      // 3. BELONGINGS Render
+      // 3. BELONGINGS Render (持 - Each item has dot on top)
       let belongingsHtml = "";
       const bText = state.belongings || [];
       bText.forEach(item => {
         if (item && item.trim()) {
-          let formattedItem = item.trim();
-          if (!formattedItem.startsWith('・') && !formattedItem.startsWith('・')) {
-            formattedItem = '・' + formattedItem;
+          let textOnly = item.trim();
+          if (textOnly.startsWith('・') || textOnly.startsWith('・')) {
+            textOnly = textOnly.substring(1).trim();
           }
-          belongingsHtml += `<div class="mx-3 md:mx-5 font-bold whitespace-nowrap select-text">${toFullWidth(formattedItem)}</div>`;
+          
+          // Even if empty, output the dot placeholder as seen in user's capture
+          if (textOnly === "" || textOnly === "・") {
+            belongingsHtml += `<div class="mx-2 md:mx-3.5 font-bold whitespace-nowrap select-none text-slate-400">・</div>`;
+          } else {
+            belongingsHtml += `
+              <div class="mx-2 md:mx-3.5 font-extrabold whitespace-nowrap select-text flex flex-col items-center">
+                <span class="select-none text-slate-400 mb-1">・</span>
+                <span class="tracking-wide leading-tight">${makeUprightHtml(textOnly)}</span>
+              </div>
+            `;
+          }
         }
       });
       el.displayBelongings.innerHTML = belongingsHtml || `<div class="text-slate-300">・なし</div>`;
 
-      // 4. HOMEWORK Render (Features visual badge like in screenshot)
+      // 4. HOMEWORK Render (宿 - Features precise circular stroke badge and spacing)
       let homeworkHtml = "";
       const hList = state.homework || [];
       hList.forEach((hw) => {
         if (hw.badge || hw.text) {
-          const lines = (hw.text || "").split('\n').map(l => toFullWidth(l)).join('<br>');
+          // Homework details split by line break
+          const formattedLines = (hw.text || "")
+            .split('\n')
+            .map(line => `<div class="my-0.5">${makeUprightHtml(line)}</div>`)
+            .join('');
+
           homeworkHtml += `
-            <div class="flex flex-col items-center mx-4 md:mx-6 select-text">
-              <!-- Circular Badge as seen in screen capture (e.g., 音) -->
-              <div class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 md:border-4 border-slate-700 flex items-center justify-center font-extrabold text-2xl md:text-3xl bg-slate-50 mb-3 shrink-0">
-                ${toFullWidth(hw.badge || '')}
+            <div class="flex flex-col items-center mx-3 md:mx-5 select-text shrink-0">
+              <!-- Circular Badge as in screenshot (Thin border, bold text, transparent/white bg) -->
+              <div class="w-11 h-11 md:w-15 md:h-15 rounded-full border-2 border-slate-700 flex items-center justify-center font-black text-xl md:text-2xl bg-white mb-3 shadow-sm shrink-0">
+                ${hw.badge || ''}
               </div>
-              <div class="leading-relaxed font-bold text-center tracking-wide text-xl md:text-2xl">${lines}</div>
+              <div class="leading-snug font-extrabold text-center tracking-wide text-[0.85em] md:text-[0.9em]">${formattedLines}</div>
             </div>
           `;
         }
       });
       el.displayHomework.innerHTML = homeworkHtml || `<div class="text-slate-300">なし</div>`;
 
-      // 5. CONTACTS Render
+      // 5. CONTACTS Render (連)
       let contactsHtml = "";
       const cText = state.contacts || [];
       cText.forEach(item => {
         if (item && item.trim()) {
-          contactsHtml += `<div class="mx-3 md:mx-5 font-bold whitespace-nowrap select-text">${toFullWidth(item)}</div>`;
+          contactsHtml += `
+            <div class="mx-2 md:mx-4 font-extrabold whitespace-nowrap select-text tracking-wide leading-tight">
+              ${makeUprightHtml(item)}
+            </div>
+          `;
         }
       });
       el.displayContacts.innerHTML = contactsHtml || `<div class="text-slate-300">※なし</div>`;
     }
 
-    // Update Input Panel to match Cloud State
+    // Update Input Panel to match Cloud/Local State
     function updateEditorUI() {
       if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        // Skip updating active focus element to prevent text skipping
+        // Skip updating active focus element to prevent text cursor skipping
         return;
       }
 
@@ -894,16 +947,16 @@
       // Timetable sync
       buildTimetableEditorList();
 
-      // Belongings sync
-      el.editorBelongingsText.value = (state.belongings || []).join('\n');
+      // Belongings list sync
+      buildBelongingsEditorList();
 
       // Homework sync
       buildHomeworkEditorList();
 
-      // Contacts sync
-      el.editorContactsText.value = (state.contacts || []).join('\n');
+      // Contacts list sync
+      buildContactsEditorList();
 
-      // Sync settings
+      // Settings sync
       el.inputScale.value = state.fontScale || 100;
       el.labelScale.textContent = `${state.fontScale || 100}%`;
       el.inputFontTheme.value = state.fontTheme || "font-school-gothic";
@@ -937,7 +990,52 @@
       });
     }
 
-    // Build Homework items list for mobile
+    // Build the dynamic belongings list inputs
+    function buildBelongingsEditorList() {
+      const container = el.editorBelongingsContainer;
+      container.innerHTML = "";
+
+      const bList = state.belongings || [];
+      bList.forEach((item, idx) => {
+        // Remove helper prefix if present for clean display
+        let cleanText = item.trim();
+        if (cleanText.startsWith('・')) {
+          cleanText = cleanText.substring(1).trim();
+        }
+
+        const div = document.createElement('div');
+        div.className = "flex items-center space-x-2";
+        div.innerHTML = `
+          <div class="text-slate-400 font-bold px-1 select-none">・</div>
+          <input type="text" value="${cleanText}" placeholder="例: エプロン C (空欄ならドットのみ表示)" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-sm font-bold input-belongings-item" data-index="${idx}">
+          <button class="text-rose-500 hover:text-rose-600 p-2 btn-belonging-delete" data-index="${idx}">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+
+      // Bind events
+      document.querySelectorAll('.input-belongings-item').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          const val = e.target.value.trim();
+          state.belongings[idx] = val ? `・${val}` : '・';
+          triggerAutoSave();
+        });
+      });
+
+      document.querySelectorAll('.btn-belonging-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.currentTarget.dataset.index);
+          state.belongings.splice(idx, 1);
+          buildBelongingsEditorList();
+          saveStateToCloud();
+        });
+      });
+    }
+
+    // Build Homework items list for mobile with subject quick-select badges
     function buildHomeworkEditorList() {
       const container = el.editorHomeworkContainer;
       container.innerHTML = "";
@@ -945,21 +1043,54 @@
       const hList = state.homework || [];
       hList.forEach((hw, idx) => {
         const itemDiv = document.createElement('div');
-        itemDiv.className = "bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-start space-x-3";
+        itemDiv.className = "bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-col space-y-3";
         itemDiv.innerHTML = `
-          <div class="w-16">
-            <label class="block text-[9px] font-bold text-slate-400 mb-0.5 font-sans">丸文字記号</label>
-            <input type="text" value="${hw.badge || ''}" maxlength="2" placeholder="音" class="w-full text-center py-2 border rounded-lg bg-white font-black text-slate-800 text-sm input-hw-badge" data-index="${idx}">
+          <div class="flex items-start space-x-3">
+            <div class="w-16">
+              <label class="block text-[9px] font-bold text-slate-400 mb-0.5 font-sans">丸文字記号</label>
+              <input type="text" value="${hw.badge || ''}" maxlength="2" placeholder="音" class="w-full text-center py-2 border border-slate-200 rounded-xl bg-white font-black text-slate-800 text-sm input-hw-badge" data-index="${idx}">
+            </div>
+            
+            <div class="flex-1">
+              <label class="block text-[9px] font-bold text-slate-400 mb-0.5 font-sans">宿題の詳細（改行可能）</label>
+              <textarea rows="2" class="w-full px-3 py-1.5 border border-slate-200 rounded-xl bg-white text-xs font-semibold text-slate-800 input-hw-text" data-index="${idx}" placeholder="国語 86から87" style="resize: none;">${hw.text || ''}</textarea>
+            </div>
+            
+            <button class="text-rose-500 hover:text-rose-600 pt-5 btn-hw-delete" data-index="${idx}">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
           </div>
-          <div class="flex-1">
-            <label class="block text-[9px] font-bold text-slate-400 mb-0.5 font-sans">宿題の詳細（改行可能）</label>
-            <textarea rows="2" class="w-full px-2 py-1.5 border rounded-lg bg-white text-xs font-semibold text-slate-800 input-hw-text" data-index="${idx}" style="resize: none;">${hw.text || ''}</textarea>
+          
+          <!-- Subject badge presets for one-tap input -->
+          <div>
+            <span class="text-[9px] font-bold text-slate-400 block mb-1">ワンタップ設定:</span>
+            <div class="flex flex-wrap gap-1">
+              ${["音", "が", "国", "算", "理", "社", "図", "体", "道", "書"].map(subj => `
+                <button type="button" class="btn-preset-badge bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold px-2 py-1 rounded-lg transition" data-index="${idx}" data-val="${subj}">
+                  ${subj}
+                </button>
+              `).join('')}
+            </div>
           </div>
-          <button class="text-rose-500 hover:text-rose-600 pt-5 btn-hw-delete" data-index="${idx}">
-            <i class="fa-solid fa-trash"></i>
-          </button>
         `;
         container.appendChild(itemDiv);
+      });
+
+      // Bind preset badges
+      document.querySelectorAll('.btn-preset-badge').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.currentTarget.dataset.index);
+          const val = e.currentTarget.dataset.val;
+          state.homework[idx].badge = val;
+          
+          // Auto add empty confirmation bracket if field is totally blank
+          if (!state.homework[idx].text) {
+            state.homework[idx].text = "〔　〕";
+          }
+          
+          buildHomeworkEditorList();
+          saveStateToCloud();
+        });
       });
 
       // Bind events
@@ -989,9 +1120,46 @@
       });
     }
 
+    // Build dynamic contacts/announcements list
+    function buildContactsEditorList() {
+      const container = el.editorContactsContainer;
+      container.innerHTML = "";
+
+      const cList = state.contacts || [];
+      cList.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = "flex items-center space-x-2";
+        div.innerHTML = `
+          <input type="text" value="${item}" placeholder="※15:00げこう" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-sm font-bold input-contacts-item" data-index="${idx}">
+          <button class="text-rose-500 hover:text-rose-600 p-2 btn-contacts-delete" data-index="${idx}">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+
+      // Bind events
+      document.querySelectorAll('.input-contacts-item').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          state.contacts[idx] = e.target.value;
+          triggerAutoSave();
+        });
+      });
+
+      document.querySelectorAll('.btn-contacts-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.currentTarget.dataset.index);
+          state.contacts.splice(idx, 1);
+          buildContactsEditorList();
+          saveStateToCloud();
+        });
+      });
+    }
+
     // Set up user interactive components and behaviors
     function setupUI() {
-      // 1. Initial Setup Screen Event
+      // 1. Initial Setup Screen Event (ALWAYS register immediately!)
       el.btnStartSetup.addEventListener('click', () => {
         const enteredId = el.setupClassId.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
         if (!enteredId) {
@@ -1001,9 +1169,13 @@
         currentClassId = enteredId;
         el.classroomBadge.textContent = currentClassId;
         
-        // Update URL cleanly
-        const newUrl = `${window.location.origin}${window.location.pathname}?class=${currentClassId}&mode=${isDisplayMode ? 'display' : 'edit'}`;
-        window.history.pushState({ path: newUrl }, '', newUrl);
+        // Update URL cleanly with safety try-catch block for local files
+        try {
+          const newUrl = `${window.location.origin}${window.location.pathname}?class=${currentClassId}&mode=${isDisplayMode ? 'display' : 'edit'}`;
+          window.history.pushState({ path: newUrl }, '', newUrl);
+        } catch (e) {
+          console.warn("Could not write parameters to URL in local file mode", e);
+        }
 
         el.setupView.classList.add('hidden');
         
@@ -1014,14 +1186,21 @@
         } else {
           startBoardSync();
         }
+
+        // Display correct screen after ID entry
+        updateViewVisibility();
       });
 
       // 2. Mode Change (Display Mode / Edit Mode toggle)
       el.btnToggleMode.addEventListener('click', () => {
         isDisplayMode = !isDisplayMode;
         
-        const newUrl = `${window.location.origin}${window.location.pathname}?class=${currentClassId}&mode=${isDisplayMode ? 'display' : 'edit'}`;
-        window.history.pushState({ path: newUrl }, '', newUrl);
+        try {
+          const newUrl = `${window.location.origin}${window.location.pathname}?class=${currentClassId}&mode=${isDisplayMode ? 'display' : 'edit'}`;
+          window.history.pushState({ path: newUrl }, '', newUrl);
+        } catch (e) {
+          console.warn("Could not switch mode parameters in URL in local file mode", e);
+        }
         
         updateViewVisibility();
       });
@@ -1094,34 +1273,36 @@
         }
       });
 
-      // 5. Belongings text change action
-      el.editorBelongingsText.addEventListener('input', (e) => {
-        state.belongings = e.target.value.split('\n');
-        triggerAutoSave();
+      // 5. Belongings adding & clearing
+      el.btnBelongingsAdd.addEventListener('click', () => {
+        state.belongings.push("・");
+        buildBelongingsEditorList();
+        saveStateToCloud();
       });
       el.btnBelongingsClear.addEventListener('click', () => {
-        el.editorBelongingsText.value = "";
-        state.belongings = [];
+        state.belongings = ["・", "・", "・"];
+        buildBelongingsEditorList();
         saveStateToCloud();
       });
 
       // 6. Homework addition & deletion
       el.btnHomeworkAdd.addEventListener('click', () => {
         if (state.homework.length < 5) {
-          state.homework.push({ badge: "新", text: "" });
+          state.homework.push({ badge: "国", text: "〔　〕" });
           buildHomeworkEditorList();
           saveStateToCloud();
         }
       });
 
-      // 7. Contacts text change action
-      el.editorContactsText.addEventListener('input', (e) => {
-        state.contacts = e.target.value.split('\n');
-        triggerAutoSave();
+      // 7. Contacts addition & clearing
+      el.btnContactsAdd.addEventListener('click', () => {
+        state.contacts.push("※");
+        buildContactsEditorList();
+        saveStateToCloud();
       });
       el.btnContactsClear.addEventListener('click', () => {
-        el.editorContactsText.value = "";
         state.contacts = [];
+        buildContactsEditorList();
         saveStateToCloud();
       });
 
@@ -1221,6 +1402,9 @@
 
     // Execution trigger on Load
     window.onload = function() {
+      // 1. Register event listeners first to make sure buttons work immediately
+      setupUI(); 
+      // 2. Perform background Firebase connections/routing
       initAuthAndRouting();
     };
 
