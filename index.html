@@ -738,20 +738,26 @@
         db.collection("boards").doc(boardId).get().then(doc => {
             const data = doc.data() || {};
             const currentWeek = data.week || "月";
+            
+            // 翌曜日のテンプレートを特定するロジック
+            const weekDays = ['月', '火', '水', '木', '金'];
+            const currentIndex = weekDays.indexOf(currentWeek);
+            const nextWeek = weekDays[(currentIndex + 1) % 5];
+
             const templates = data.templates || {};
-            const templateList = templates[currentWeek];
+            const templateList = templates[nextWeek];
             
             if (!templateList || templateList.length === 0 || templateList.every(v => v === "")) {
                 showAlert(
                     "テンプレート未設定", 
-                    `「${currentWeek}曜日」のテンプレート時間割がまだ設定されていません。編集画面の「週間テンプレート」タブで登録してください。`
+                    `「${nextWeek}曜日」のテンプレート時間割がまだ設定されていません。編集画面の「週間テンプレート」タブで登録してください。`
                 );
                 return;
             }
             
             showConfirm(
                 "テンプレートの適用", 
-                `現在の本日の時間割を、「${currentWeek}曜日」の登録済みテンプレート（${templateList.filter(Boolean).join(', ')} など）で上書きしますか？`,
+                `現在の本日の時間割を、「${nextWeek}曜日」の登録済みテンプレート（${templateList.filter(Boolean).join(', ')} など）で上書きしますか？`,
                 () => {
                     db.collection("boards").doc(boardId).set({ schedule: [...templateList] }, { merge: true });
                 }
@@ -966,13 +972,17 @@
         
         // 曜日更新時、適用クイックボタンの title も更新
         const quickBtn = document.getElementById('quick-template-btn');
+        const weekDays = ['月', '火', '水', '木', '金'];
+        const currentIdx = weekDays.indexOf(d.week || '月');
+        const nextDay = weekDays[(currentIdx + 1) % 5];
+
         if (quickBtn) {
-            quickBtn.title = `${d.week || '月'}曜日の時間割テンプレートを適用`;
+            quickBtn.title = `${nextDay}曜日の時間割テンプレートを適用`;
         }
         
         const editorBtnLabel = document.getElementById('editor-template-btn-label');
         if (editorBtnLabel) {
-            editorBtnLabel.textContent = `「${d.week || '月'}」から読込`;
+            editorBtnLabel.textContent = `「${nextDay}」から読込`;
         }
 
         // 現在週間タブが開いていれば再レンダリング
